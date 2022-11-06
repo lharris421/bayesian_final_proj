@@ -1,6 +1,6 @@
 library(rstan)
 
-full_data <- readRDS("/Shared/ssrivastva/logistic/data/full_data.rds")
+full_data <- readRDS("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/full_data.rds")
 
 y0 <- as.numeric(full_data[,"outcome"])
 x0 <- as.matrix(full_data[,-"outcome"])
@@ -29,6 +29,6 @@ resStan <- stan(
 res <- resStan@sim$samples[[1]][1:ncol(x0)]
 rtime <- proc.time() - rtime
 
-fname <- paste0("/Shared/ssrivastva/logistic/result/full_res.rds")
+fname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/full_res.rds")
 saveRDS(list(res = res, time = rtime[3]), fname)
   
