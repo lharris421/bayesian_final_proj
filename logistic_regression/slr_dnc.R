@@ -1,5 +1,6 @@
 ##
 library(rstan)
+library(glue)
 
 ## Get index number
 args = commandArgs(trailingOnly=TRUE)
@@ -24,7 +25,9 @@ dat <- list(n      = nrow(x0),
             y      = y0)
 
 resStan <- stan(model_code = stanCode, data = dat,
-                chains = 1, iter = 10000, warmup = 5000, thin = 5)
+                chains = 1, iter = 6000, warmup = 1000, thin = 5)
+
+## Check
 
 res <- do.call(cbind, resStan@sim$samples[[1]][1:ncol(x0)])
 

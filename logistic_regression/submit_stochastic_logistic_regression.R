@@ -11,7 +11,7 @@ system("rm /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_r
 ### Also include combining data in this file
 
 ## Number of partitions
-npart <- 250
+npart <- 50
 
 ## Submit the partitioning script
 sub_command <- glue(
@@ -53,9 +53,85 @@ while (continue & i < 100) {
 }
 
 
-#######
+####### LOG INTO COMPUTE NODE BEFORE PROCEEDING ################################
 
 
 
 
 ###### Combine everything
+computeBarycenter <- function (meanList, covList) {
+  library(matrixStats)
+  library(expm)
+  library(MASS)
+  
+  ncomp <- length(covList)
+  ndim <- nrow(covList[[1]])
+  wts <- rep(1, ncomp) / ncomp
+  
+  baryMean <- rowMeans(do.call(cbind, meanList))
+  baryCov <- diag(1.0, ndim)
+  barySd <- sqrtm(baryCov)
+  err <- baryCov
+  cnt <- 1
+  while ((norm(err, type = "F") > 1e-6) & cnt < 500) {
+    if (cnt %% 10 == 0)  cat("iter: ", cnt, "\n")
+    
+    ssj <- matrix(0.0, nrow = ndim, ncol = ndim)
+    for (ii in 1:ncomp) {
+      ssj <- ssj + sqrtm(baryCov %*% covList[[ii]])
+    }
+    
+    tmp <- solve(sqrtm(baryCov))
+    baryCovNew <- tmp %*% tcrossprod(ssj / ncomp) %*% tmp
+    err <- baryCov - baryCovNew
+    baryCov <- baryCovNew
+    barySd <- sqrtm(baryCov)
+    cnt <- cnt + 1
+  }
+  
+  list(mean = baryMean, cov = baryCov, sqrt = barySd, iter = cnt)
+}
+
+sampleBetas <- function (betaList) {
+  
+  library(matrixStats)
+  library(expm)
+  
+  npart <- length(betaList)
+  meanBetas <- list()
+  covBetas <- list()
+  
+  meanBetas <- lapply(betaList, function(x) colMeans(x))
+  covBetas <- lapply(betaList, function(x) cov(x))
+  
+  resBary <- computeBarycenter(meanBetas, covBetas)
+  muBetas <- resBary$mean
+  sigBetas <- resBary$cov
+  sqrtSigBetas <- resBary$sqrt
+  
+  baryList <- list()
+  for (ii in 1:npart) {
+    tmp <- as(chol2inv(chol(covBetas[[ii]])), "symmetricMatrix")
+    tmp1 <- matrix(meanBetas[[ii]], nrow = nrow(betaList[[ii]]), ncol = ncol(betaList[[ii]]), byrow = TRUE)
+    centScaledSamps <- sqrtm(tmp) %*% (t(betaList[[ii]] - tmp1))
+    baryList[[ii]] <- t(muBetas + sqrtSigBetas %*% centScaledSamps)
+  }
+  
+  list(
+    wasp = do.call(rbind, baryList)
+  )
+}
+
+npart <- 250
+
+results <- list()
+for (i in 1:npart) {
+  fname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/res{i}.rds")
+  load(fname)
+  results[[sid]] <- res[-(1:1000), ]
+}
+bary <- sampleBetas(results)
+
+rname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/final_results/results_250.rds")
+save(bary, file = rname)
+

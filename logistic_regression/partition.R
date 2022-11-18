@@ -9,9 +9,11 @@ full_data <- mod_dat %>%
   select(proc, smoker, age, sex, carrier) %>%
   mutate(score = scale(score))
 
+table(full_data$carrier, full_data$proc)
+
 rm("mod_dat")
 
-npart <- 250
+npart <- 50
 partitions <- (sample(1:nrow(full_data), replace = FALSE) %% npart) + 1
 
 for (i in 1:npart) {
