@@ -1,3 +1,6 @@
+##
+library(rstan)
+
 ## Get index number
 args = commandArgs(trailingOnly=TRUE)
 if (length(args) == 0){
