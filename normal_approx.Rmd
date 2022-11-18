@@ -32,7 +32,9 @@ $$
 $$
 \pi({\boldsymbol{\theta}}|\mathrm{\bf{y}})_i \propto \Big[\Big(\frac{\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{ y_i}\Big(\frac{1}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{1- y_i} \Big] \cdot \Big[\exp\Big\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\}  \Big]
 $$
+
 *Log-posterior (non-D&C)*
+
 $$
 \begin{aligned}
 \ell_i(\pi({\boldsymbol{\theta}}|\mathrm{\bf{y}}) ) &\propto y_i \log(\frac{\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}})+(1-y_i) \log(\frac{1}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}) -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\

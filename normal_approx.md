@@ -19,7 +19,9 @@ $$
 $$
 \pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}})\_i \propto \Big\[\Big(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{ y_i}\Big(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{1- y_i} \Big\] \cdot \Big\[\exp\Big\\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\\}  \Big\]
 $$
+
 *Log-posterior (non-D&C)*
+
 $$
 \begin{aligned}
 \ell_i(\pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}}) ) &\propto y_i \log(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}})+(1-y_i) \log(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}) -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
@@ -235,17 +237,17 @@ heidel.diag(full_data_draws)
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 failed       NA        0.04966
-    ## var2 passed        1        0.09584
-    ## var3 failed       NA        0.00469
-    ## var4 passed        1        0.13038
-    ##                              
-    ##      Halfwidth Mean Halfwidth
-    ##      test                    
-    ## var1 <NA>        NA    NA    
-    ## var2 failed    3.77 0.651    
-    ## var3 <NA>        NA    NA    
-    ## var4 passed    2.24 0.184
+    ## var1 passed       16001     0.05849
+    ## var2 passed           1     0.08317
+    ## var3 failed          NA     0.00458
+    ## var4 passed           1     0.10207
+    ##                               
+    ##      Halfwidth Mean  Halfwidth
+    ##      test                     
+    ## var1 passed    0.911 0.0664   
+    ## var2 failed    3.774 0.6269   
+    ## var3 <NA>         NA     NA   
+    ## var4 passed    2.238 0.1807
 
 ``` r
 raftery.diag(full_data_draws)
@@ -258,10 +260,10 @@ raftery.diag(full_data_draws)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  20       23275 3746          6.21     
-    ##  15       20645 3746          5.51     
-    ##  18       26148 3746          6.98     
-    ##  39       45643 3746         12.20
+    ##  24       32672 3746         8.72      
+    ##  27       33462 3746         8.93      
+    ##  12       17284 3746         4.61      
+    ##  12       18604 3746         4.97
 
 ``` r
 #################
@@ -277,4 +279,4 @@ describe_posterior(as.data.frame(full_data_draws))
     ## V1        |   0.94 | [0.71, 1.28] | 100% | [-0.10, 0.10] |        0%
     ## V2        |   3.72 | [3.04, 4.64] | 100% | [-0.10, 0.10] |        0%
     ## V3        |   1.07 | [0.87, 1.53] | 100% | [-0.10, 0.10] |        0%
-    ## V4        |   2.27 | [1.92, 2.50] | 100% | [-0.10, 0.10] |        0%
+    ## V4        |   2.27 | [1.92, 2.51] | 100% | [-0.10, 0.10] |        0%
