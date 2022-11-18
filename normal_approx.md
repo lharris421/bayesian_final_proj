@@ -39,7 +39,7 @@ N <- 1e4
 x1 <- rnorm(N)           # some continuous variables 
 x2 <- rnorm(N)
 x3 <-rnorm(N)
-beta <- c(1, 0.11,1.34,2.3)
+beta <- c(-2, 0.11,1.34,2.3)
 X <-  cbind(1, x1,x2,x3)
 eta <- X %*% beta      
 pr <- 1/(1+exp(-eta))         # pass through an inv-logit function
@@ -64,7 +64,7 @@ Opt <- optim(par = c(10,0,2,1),
 (Opt$par)
 ```
 
-    ## [1] 1.00181368 0.08753796 1.38046846 2.26045203
+    ## [1] -2.0175748  0.2042642  1.3838705  2.3357465
 
 **Posterior with multivariate normal prior (non-D&C)**
 
@@ -86,7 +86,7 @@ Opt <- optim(par = rep(0,4),
 (params <- Opt$par)
 ```
 
-    ## [1] 1.00192414 0.08760457 1.37917357 2.25989564
+    ## [1] -2.0165597  0.2039872  1.3832380  2.3351330
 
 ``` r
 SigNew <-  chol2inv(chol(-Opt$hessian))
@@ -107,7 +107,7 @@ N <- 1e4
 x1 <- rnorm(N)           # some continuous variables 
 x2 <- rnorm(N)
 x3 <-rnorm(N)
-beta <- c(1,3.8,1.1,2.3)
+beta <- c(-3,3.8,1.1,2.3) # True Betas
 X <-  cbind(1, x1,x2,x3)
 eta <- X %*% beta      
 pr <- 1/(1+exp(-eta))         # pass through an inv-logit function
@@ -234,20 +234,20 @@ full_data_draws <- full_data_draws %>% as.mcmc()
 heidel.diag(full_data_draws)
 ```
 
-    ##                                    
-    ##      Stationarity start     p-value
-    ##      test         iteration        
-    ## var1 passed       16001     0.05849
-    ## var2 passed           1     0.08317
-    ## var3 failed          NA     0.00458
-    ## var4 passed           1     0.10207
+    ##                                     
+    ##      Stationarity start     p-value 
+    ##      test         iteration         
+    ## var1 passed       8001      2.60e-01
+    ## var2 failed         NA      5.86e-03
+    ## var3 passed          1      1.76e-01
+    ## var4 failed         NA      6.94e-05
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    0.911 0.0664   
-    ## var2 failed    3.774 0.6269   
-    ## var3 <NA>         NA     NA   
-    ## var4 passed    2.238 0.1807
+    ## var1 passed    -2.88 0.1116   
+    ## var2 <NA>         NA     NA   
+    ## var3 passed     1.07 0.0338   
+    ## var4 <NA>         NA     NA
 
 ``` r
 raftery.diag(full_data_draws)
@@ -260,10 +260,10 @@ raftery.diag(full_data_draws)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  24       32672 3746         8.72      
-    ##  27       33462 3746         8.93      
-    ##  12       17284 3746         4.61      
-    ##  12       18604 3746         4.97
+    ##  28       29575 3746         7.90      
+    ##  12       15256 3746         4.07      
+    ##  9        12462 3746         3.33      
+    ##  24       36072 3746         9.63
 
 ``` r
 #################
@@ -274,9 +274,9 @@ describe_posterior(as.data.frame(full_data_draws))
 
     ## Summary of Posterior Distribution
     ## 
-    ## Parameter | Median |       95% CI |   pd |          ROPE | % in ROPE
-    ## --------------------------------------------------------------------
-    ## V1        |   0.94 | [0.71, 1.28] | 100% | [-0.10, 0.10] |        0%
-    ## V2        |   3.72 | [3.04, 4.64] | 100% | [-0.10, 0.10] |        0%
-    ## V3        |   1.07 | [0.87, 1.53] | 100% | [-0.10, 0.10] |        0%
-    ## V4        |   2.27 | [1.92, 2.51] | 100% | [-0.10, 0.10] |        0%
+    ## Parameter | Median |         95% CI |   pd |          ROPE | % in ROPE
+    ## ----------------------------------------------------------------------
+    ## V1        |  -2.90 | [-3.42, -2.66] | 100% | [-0.10, 0.10] |        0%
+    ## V2        |   3.62 | [ 3.32,  4.53] | 100% | [-0.10, 0.10] |        0%
+    ## V3        |   1.06 | [ 0.94,  1.22] | 100% | [-0.10, 0.10] |        0%
+    ## V4        |   2.28 | [ 2.02,  2.61] | 100% | [-0.10, 0.10] |        0%
