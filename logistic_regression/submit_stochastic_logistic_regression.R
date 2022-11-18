@@ -2,12 +2,16 @@ library(rstan)
 library(glue)
 library(dplyr)
 
+
 ## clean up folder to store partitions in
 system("rm /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/*", intern = FALSE)
 system("rm /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/*", intern = FALSE)
 
 ### Will want to partition and submit here
 ### Also include combining data in this file
+
+## Number of partitions
+npart <- 250
 
 ## Submit the partitioning script
 sub_command <- glue(

@@ -1,2 +1,2 @@
 module load R
-Rscript mh_dnc.R $SGE_TASK_ID
+Rscript slr_dnc.R $SGE_TASK_ID

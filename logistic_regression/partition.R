@@ -11,7 +11,7 @@ full_data <- mod_dat %>%
 
 rm("mod_dat")
 
-npart <- 50
+npart <- 250
 partitions <- (sample(1:nrow(full_data), replace = FALSE) %% npart) + 1
 
 for (i in 1:npart) {
