@@ -1,48 +1,36 @@
----
-title: "Normal Approximation"
-date: '2022-11-18'
-output: github_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(parallel)
-library(coda)
-library(bayestestR)
-library(adaptMCMC)
-library(mvtnorm)
-library(tidyverse)
-library(magrittr)
-```
+Normal Approximation
+================
+2022-11-18
 
 **Likelihood (non-D&C)**
 
 $$
-L_i(\boldsymbol{\beta}) = \Big(\frac{\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{y_i}\Big(\frac{1}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{1-y_i}
+L_i(\boldsymbol{\beta}) = \Big(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{y_i}\Big(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{1-y_i}
 $$
 
-**Multivariate normal prior on $\boldsymbol{\beta}$**
+**Multivariate normal prior on **β****
 
 $$
-\pi({\boldsymbol{\beta}}) \propto \exp\Big\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\}
+\pi({\boldsymbol{\beta}}) \propto \exp\Big\\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\\}
 $$
 
 **Posterior (non-D&C)**
 
 $$
-\pi({\boldsymbol{\theta}}|\mathrm{\bf{y}})_i \propto \Big[\Big(\frac{\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{ y_i}\Big(\frac{1}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{1- y_i} \Big] \cdot \Big[\exp\Big\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\}  \Big]
+\pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}})\_i \propto \Big\[\Big(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{ y_i}\Big(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{1- y_i} \Big\] \cdot \Big\[\exp\Big\\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\\}  \Big\]
 $$
 *Log-posterior (non-D&C)*
 $$
 \begin{aligned}
-\ell_i(\pi({\boldsymbol{\theta}}|\mathrm{\bf{y}}) ) &\propto y_i \log(\frac{\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}})+(1-y_i) \log(\frac{1}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}) -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\
-&\propto  y_i\log(\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})- y_i\log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})-\log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})+ y_i \log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\
-&\propto y_i\mathrm{\bf{x}_i^\top\boldsymbol{\beta}} -\log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\
+\ell_i(\pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}}) ) &\propto y_i \log(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}})+(1-y_i) \log(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}) -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
+&\propto  y_i\log(\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})- y_i\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})-\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})+ y_i \log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
+&\propto y_i\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}} -\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
 \end{aligned}
 $$
 
 **Solve for MLE**
-```{r}
+
+``` r
 ## Simulate Data
 set.seed(666)
 N <- 1e4
@@ -56,10 +44,9 @@ pr <- 1/(1+exp(-eta))         # pass through an inv-logit function
 y <- rbinom(N,1,pr)  
 ```
 
-
 **Posterior with flat prior check to see if we get beta from optim**
 
-```{r}
+``` r
 log_post_fun <- function(param){
   sum(y*X%*%param - log(1 + exp(X%*%param)))
 }  
@@ -75,9 +62,11 @@ Opt <- optim(par = c(10,0,2,1),
 (Opt$par)
 ```
 
+    ## [1] 1.00181368 0.08753796 1.38046846 2.26045203
+
 **Posterior with multivariate normal prior (non-D&C)**
 
-```{r}
+``` r
 mu <- rep(0,4)
 sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(X[,-1])))))
 
@@ -93,6 +82,11 @@ Opt <- optim(par = rep(0,4),
                             maxit = 1e6),
              hessian = T)
 (params <- Opt$par)
+```
+
+    ## [1] 1.00192414 0.08760457 1.37917357 2.25989564
+
+``` r
 SigNew <-  chol2inv(chol(-Opt$hessian))
 
 ## Draw from multivariate normal
@@ -101,7 +95,7 @@ beta_draws <- MASS::mvrnorm(1e4, mu = params, Sigma = SigNew)
 
 **Posterior with multivariate normal prior (D&C)**
 
-```{r}
+``` r
 #######################
 #### Simulate Data ####
 #######################
@@ -188,7 +182,25 @@ clusterExport(cl,
 clusterEvalQ(cl,{
   library(MASS)
 })
+```
 
+    ## [[1]]
+    ## [1] "MASS"      "stats"     "graphics"  "grDevices" "utils"     "datasets" 
+    ## [7] "methods"   "base"     
+    ## 
+    ## [[2]]
+    ## [1] "MASS"      "stats"     "graphics"  "grDevices" "utils"     "datasets" 
+    ## [7] "methods"   "base"     
+    ## 
+    ## [[3]]
+    ## [1] "MASS"      "stats"     "graphics"  "grDevices" "utils"     "datasets" 
+    ## [7] "methods"   "base"     
+    ## 
+    ## [[4]]
+    ## [1] "MASS"      "stats"     "graphics"  "grDevices" "utils"     "datasets" 
+    ## [7] "methods"   "base"
+
+``` r
 results <-  parLapply(cl,
                       1:K,
                       function(x){inner_draws(i = x,
@@ -218,13 +230,51 @@ full_data_draws <- do.call(rbind, results_recentered)
 # Looks bad
 full_data_draws <- full_data_draws %>% as.mcmc()
 heidel.diag(full_data_draws)
-raftery.diag(full_data_draws)
+```
 
+    ##                                    
+    ##      Stationarity start     p-value
+    ##      test         iteration        
+    ## var1 failed       NA        0.04966
+    ## var2 passed        1        0.09584
+    ## var3 failed       NA        0.00469
+    ## var4 passed        1        0.13038
+    ##                              
+    ##      Halfwidth Mean Halfwidth
+    ##      test                    
+    ## var1 <NA>        NA    NA    
+    ## var2 failed    3.77 0.651    
+    ## var3 <NA>        NA    NA    
+    ## var4 passed    2.24 0.184
+
+``` r
+raftery.diag(full_data_draws)
+```
+
+    ## 
+    ## Quantile (q) = 0.025
+    ## Accuracy (r) = +/- 0.005
+    ## Probability (s) = 0.95 
+    ##                                        
+    ##  Burn-in  Total Lower bound  Dependence
+    ##  (M)      (N)   (Nmin)       factor (I)
+    ##  20       23275 3746          6.21     
+    ##  15       20645 3746          5.51     
+    ##  18       26148 3746          6.98     
+    ##  39       45643 3746         12.20
+
+``` r
 #################
 #### Summary ####
 #################
 describe_posterior(as.data.frame(full_data_draws))
 ```
 
-
-
+    ## Summary of Posterior Distribution
+    ## 
+    ## Parameter | Median |       95% CI |   pd |          ROPE | % in ROPE
+    ## --------------------------------------------------------------------
+    ## V1        |   0.94 | [0.71, 1.28] | 100% | [-0.10, 0.10] |        0%
+    ## V2        |   3.72 | [3.04, 4.64] | 100% | [-0.10, 0.10] |        0%
+    ## V3        |   1.07 | [0.87, 1.53] | 100% | [-0.10, 0.10] |        0%
+    ## V4        |   2.27 | [1.92, 2.50] | 100% | [-0.10, 0.10] |        0%
