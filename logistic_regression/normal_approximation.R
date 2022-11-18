@@ -1,11 +1,3 @@
----
-title: "Normal Approximation"
-date: '2022-11-18'
-output: github_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 library(parallel)
 library(coda)
 library(bayestestR)
@@ -13,48 +5,9 @@ library(adaptMCMC)
 library(mvtnorm)
 library(tidyverse)
 library(magrittr)
-```
 
-**Likelihood (non-D&C)**
+  
 
-$$
-L_i(\boldsymbol{\beta}) = \Big(\frac{\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{y_i}\Big(\frac{1}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{1-y_i}
-$$
-
-**Multivariate normal prior on $\boldsymbol{\beta}$**
-
-$$
-\pi({\boldsymbol{\beta}}) \propto \exp\Big\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\}
-$$
-
-**Posterior (non-D&C)**
-
-$$
-\pi({\boldsymbol{\theta}}|y_i) \propto \Big[\Big(\frac{\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{ y_i}\Big(\frac{1}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}\Big)^{1- y_i} \Big] \cdot \Big[\exp\Big\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\}  \Big]
-$$
-
-*Log-posterior (non-D&C)*
-
-$$
-\begin{aligned}
-\ell(\pi({\boldsymbol{\theta}}|y_i) ) &\propto y_i \log(\frac{\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}})+(1-y_i) \log(\frac{1}{1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\}}) -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\
-&\propto  y_i\log(\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})- y_i\log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})-\log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})+ y_i \log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\
-&\propto y_i\mathrm{\bf{x}_i^\top\boldsymbol{\beta}} -\log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\
-\end{aligned}
-$$
-
-Therefore, 
-
-$$
-\begin{aligned}
-\ell(\pi({\boldsymbol{\theta}}|\mathrm{\bf{y}}) ) 
-= \sum_{i=1}^n (y_i\mathrm{\bf{x}_i^\top\boldsymbol{\beta}} - n\log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})) - \frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu}) + C\\
-\end{aligned}
-$$
-
-**Solve for MLE**
-
-```{r}
 ## Simulate Data
 set.seed(666)
 N <- 1e4
@@ -66,11 +19,10 @@ X <-  cbind(1, x1,x2,x3)
 eta <- X %*% beta      
 pr <- 1/(1+exp(-eta))         # pass through an inv-logit function
 y <- rbinom(N,1,pr)  
-```
 
-**Posterior with flat prior check to see if we get beta from optim**
 
-```{r}
+## Flat prior
+  
 log_post_fun <- function(param){
   sum(y*X%*%param - log(1 + exp(X%*%param)))
 }  
@@ -84,12 +36,9 @@ Opt <- optim(par = c(10,0,2,1),
              hessian = T)
 
 (Opt$par)
-```
 
 
-**Posterior with multivariate normal prior (non-D&C)**
-
-```{r}
+## Multivariate normal prior
 mu <- rep(0,4)
 sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(X[,-1])))))
 
@@ -114,11 +63,10 @@ beta_draws <- MASS::mvrnorm(1e4, mu = params, Sigma = SigNew)
 ## 
 beta
 describe_posterior(as.data.frame(beta_draws))
-```
 
-**Posterior with multivariate normal prior (D&C)**
 
-```{r}
+## Divide and conqure with multivariate normal prior
+  
 #######################
 #### Simulate Data ####
 #######################
@@ -229,11 +177,11 @@ global_mean <- colMeans(bind_rows(lapply(results, data.frame)))
 recenter <- t(sapply(1:K, function(i) subset_mean[i, ] - global_mean)) # rows indicate subset
 ## Should this be minus?
 results_recentered <- lapply(1:K,function(i) results[[i]] - matrix(recenter[i, ],
-                                                                    nrow = nrow(results[[i]]),
-                                                                    ncol = ncol(results[[i]]),
-                                                                    byrow = T))
+                                                                   nrow = nrow(results[[i]]),
+                                                                   ncol = ncol(results[[i]]),
+                                                                   byrow = T))
 full_data_draws <- do.call(rbind, results_recentered)
-            
+
 #####################
 #### Diagnostics ####
 #####################
@@ -266,7 +214,6 @@ describe_posterior(as.data.frame(full_data_draws))
 
 ## Truth
 beta
-```
 
 
 
