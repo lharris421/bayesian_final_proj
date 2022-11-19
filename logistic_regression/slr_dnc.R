@@ -13,6 +13,10 @@ if (length(args) == 0){
 ## Load the subset of the data
 load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/partition{i}.rds"))
 
+## Checks
+# sum(y0)
+# table(y0, x0[,4])
+
 ## Call individual submission
 fileName <- "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/stoc_log_reg.stan"
 stanCode <- readChar(fileName, file.info(fileName)$size)
@@ -25,7 +29,7 @@ dat <- list(n      = nrow(x0),
             y      = y0)
 
 resStan <- stan(model_code = stanCode, data = dat,
-                chains = 1, iter = 6000, warmup = 1000, thin = 5)
+                chains = 1, iter = 10000, warmup = 5000, thin = 5)
 
 ## Check
 
