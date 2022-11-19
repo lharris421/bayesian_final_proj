@@ -144,9 +144,10 @@ inner_draws <- function(i, X, y, N, NN = 1e4) {
 ########################
 # Create folds
 K <- 4
-## Why create folds this way? Why not force a balance?
+## Why create folds this way? Why not force a balance? YOU ARE CORRECT!
 ## i.e. (sample(1:N, replace = FALSE)) %% 4 + 1
-fold_idx <- sample(1:K, size = N, replace = TRUE)
+# fold_idx <- sample(1:K, size = N, replace = TRUE)
+fold_idx <- (sample(1:N, replace = FALSE)) %% 4 + 1
 
 cl <- makeCluster(min(detectCores(), K))
 clusterExport(
