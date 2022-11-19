@@ -17,16 +17,25 @@ $$
 **Posterior (non-D&C)**
 
 $$
-\pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}})\_i \propto \Big\[\Big(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{ y_i}\Big(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{1- y_i} \Big\] \cdot \Big\[\exp\Big\\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\\}  \Big\]
+\pi({\boldsymbol{\theta}}\|y_i) \propto \Big\[\Big(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{ y_i}\Big(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}\Big)^{1- y_i} \Big\] \cdot \Big\[\exp\Big\\{ -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\Big\\}  \Big\]
 $$
 
 *Log-posterior (non-D&C)*
 
 $$
 \begin{aligned}
-\ell_i(\pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}}) ) &\propto y_i \log(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}})+(1-y_i) \log(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}) -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
+\ell(\pi({\boldsymbol{\theta}}\|y_i) ) &\propto y_i \log(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}})+(1-y_i) \log(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}) -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
 &\propto  y_i\log(\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})- y_i\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})-\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})+ y_i \log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
 &\propto y_i\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}} -\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
+\end{aligned}
+$$
+
+Therefore,
+
+$$
+\begin{aligned}
+\ell(\pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}}) ) 
+= \sum\_{i=1}^n (y_i\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}} - n\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})) - \frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu}) + C\\\\
 \end{aligned}
 $$
 
@@ -72,8 +81,8 @@ Opt <- optim(par = c(10,0,2,1),
 mu <- rep(0,4)
 sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(X[,-1])))))
 
-log_post_fun <- function(param){
-  sum(y*X%*%param - log(1 + exp(X%*%param)))-
+log_post_fun <- function(param) {
+  sum(y*X%*%param - log(1 + exp(X%*%param))) -
     drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
 }
 
@@ -83,17 +92,31 @@ Opt <- optim(par = rep(0,4),
              control = list(fnscale= -1,
                             maxit = 1e6),
              hessian = T)
-(params <- Opt$par)
-```
 
-    ## [1] -2.0165597  0.2039872  1.3832380  2.3351330
-
-``` r
+params <- Opt$par
 SigNew <-  chol2inv(chol(-Opt$hessian))
 
 ## Draw from multivariate normal
 beta_draws <- MASS::mvrnorm(1e4, mu = params, Sigma = SigNew)
+
+## 
+beta
 ```
+
+    ## [1] -2.00  0.11  1.34  2.30
+
+``` r
+describe_posterior(as.data.frame(beta_draws))
+```
+
+    ## Summary of Posterior Distribution
+    ## 
+    ## Parameter | Median |         95% CI |   pd |          ROPE | % in ROPE
+    ## ----------------------------------------------------------------------
+    ## V1        |  -2.02 | [-2.10, -1.93] | 100% | [-0.10, 0.10] |        0%
+    ## V2        |   0.20 | [ 0.14,  0.27] | 100% | [-0.10, 0.10] |        0%
+    ## V3        |   1.38 | [ 1.30,  1.46] | 100% | [-0.10, 0.10] |        0%
+    ## V4        |   2.34 | [ 2.23,  2.44] | 100% | [-0.10, 0.10] |        0%
 
 **Posterior with multivariate normal prior (D&C)**
 
@@ -107,18 +130,18 @@ N <- 1e4
 x1 <- rnorm(N)           # some continuous variables 
 x2 <- rnorm(N)
 x3 <-rnorm(N)
-beta <- c(-3,3.8,1.1,2.3) # True Betas
-X <-  cbind(1, x1,x2,x3)
+beta <- c(-3, 3.8, 1.1, 2.3) # True Betas
+X <- cbind(1, x1, x2, x3)
 eta <- X %*% beta      
-pr <- 1/(1+exp(-eta))         # pass through an inv-logit function
-y <- rbinom(N,1,pr)  
+pr <- 1 / (1 + exp(-eta))         # pass through an inv-logit function
+y <- rbinom(N, 1, pr)  
 
 #######################
 #### Log Posterior ####
 #######################
 
-log_post_fun <- function(param, X, y, N, m, sigma, mu){
-  (N/m)*sum(y*X%*%param - log(1 + exp(X%*%param)))-
+log_post_fun <- function(param, X, y, N, m, sigma, mu) {
+  (N/m)*sum(y*X%*%param - log(1 + exp(X%*%param))) -
     drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
 }
 
@@ -126,7 +149,7 @@ log_post_fun <- function(param, X, y, N, m, sigma, mu){
 #### Optim function ####
 ########################
 
-optim_fun <- function(init, X, y, N, m, sigma, mu){
+optim_fun <- function(init, X, y, N, m, sigma, mu) {
   optim(par = init,
         fn = log_post_fun,
         method = "BFGS",
@@ -145,12 +168,12 @@ optim_fun <- function(init, X, y, N, m, sigma, mu){
 #### Main function ####
 #######################
 
-inner_draws <- function(i, X, y, N, NN = 1e4){
+inner_draws <- function(i, X, y, N, NN = 1e4) {
   fold_data_y <- y[fold_idx == i]
-  fold_data_X <- X[fold_idx == i, ]
+  fold_data_X <- X[fold_idx == i,]
   
   #priors
-  sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(fold_data_X[,-1])))))
+  sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(fold_data_X[,-1])))))
   mu <- rep(0,4)
   
   Opt <- optim_fun(init = rep(0, ncol(fold_data_X)),
@@ -160,13 +183,14 @@ inner_draws <- function(i, X, y, N, NN = 1e4){
                    N = N,
                    sigma = sigma,
                    mu = mu)
+  
   params <- Opt$par
-  SigNew <-  chol2inv(chol(-Opt$hessian))
+  SigNew <- chol2inv(chol(-Opt$hessian))
   
   ## Draw from multivariate normal
- beta_draws <- MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
- 
- return(beta_draws)
+  ## beta_draws <- MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
+  ## return(beta_draws)
+  MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
 }
 
 ########################
@@ -174,14 +198,19 @@ inner_draws <- function(i, X, y, N, NN = 1e4){
 ########################
 # Create folds
 K <- 4
-fold_idx <- sample(1:K, size = N, replace = TRUE)
+## Why create folds this way? Why not force a balance?
+## i.e. (sample(1:N, replace = FALSE)) %% 4 + 1
+# fold_idx <- sample(1:K, size = N, replace = TRUE)
+fold_idx <- (sample(1:N, replace = FALSE)) %% 4 + 1
 
 cl <- makeCluster(min(detectCores(), K))
-clusterExport(cl,
-              c("X", "y", "fold_idx", "N",
-                "inner_draws", "log_post_fun",
-                "optim_fun"))
-clusterEvalQ(cl,{
+clusterExport(
+  cl,
+  c("X", "y", "fold_idx", "N",
+    "inner_draws", "log_post_fun",
+    "optim_fun")
+)
+clusterEvalQ(cl, {
   library(MASS)
 })
 ```
@@ -203,23 +232,24 @@ clusterEvalQ(cl,{
     ## [7] "methods"   "base"
 
 ``` r
-results <-  parLapply(cl,
-                      1:K,
-                      function(x){inner_draws(i = x,
-                                              X = X, 
-                                              y = y,
-                                              N = N,
-                                              NN = 1e4)})
+results <-  parLapply(
+  cl,
+  1:K,
+  function(x) inner_draws(i = x, X = X, y = y, N = N, NN = 1e4)
+)
 stopCluster(cl)
 
 ########################
 #### Recenter Draws ####
 ########################
 
-subset_mean <- t(sapply(1:K,function(i) colMeans(results[[i]]))) # rows indicate subset
-global_mean <- colMeans(subset_mean)
-recenter <- t(sapply(1:K,function(i) subset_mean[i, ] - global_mean)) # rows indicate subset
-results_recentered <- lapply(1:K,function(i) results[[i]] + matrix(recenter[i, ],
+subset_mean <- t(sapply(1:K, function(i) colMeans(results[[i]]))) # rows indicate subset
+## This step was slightly off... it assumed perfect balance
+## global_mean <- colMeans(subset_mean)
+global_mean <- colMeans(bind_rows(lapply(results, data.frame)))
+recenter <- t(sapply(1:K, function(i) subset_mean[i, ] - global_mean)) # rows indicate subset
+## Should this be minus?
+results_recentered <- lapply(1:K,function(i) results[[i]] - matrix(recenter[i, ],
                                                                     nrow = nrow(results[[i]]),
                                                                     ncol = ncol(results[[i]]),
                                                                     byrow = T))
@@ -229,25 +259,24 @@ full_data_draws <- do.call(rbind, results_recentered)
 #### Diagnostics ####
 #####################
 
-# Looks bad
 full_data_draws <- full_data_draws %>% as.mcmc()
 heidel.diag(full_data_draws)
 ```
 
-    ##                                     
-    ##      Stationarity start     p-value 
-    ##      test         iteration         
-    ## var1 passed       8001      2.60e-01
-    ## var2 failed         NA      5.86e-03
-    ## var3 passed          1      1.76e-01
-    ## var4 failed         NA      6.94e-05
+    ##                                    
+    ##      Stationarity start     p-value
+    ##      test         iteration        
+    ## var1 passed       1         0.965  
+    ## var2 passed       1         0.913  
+    ## var3 passed       1         0.884  
+    ## var4 passed       1         0.945  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.88 0.1116   
-    ## var2 <NA>         NA     NA   
-    ## var3 passed     1.07 0.0338   
-    ## var4 <NA>         NA     NA
+    ## var1 passed    -2.98 0.000702 
+    ## var2 passed     3.77 0.000888 
+    ## var3 passed     1.08 0.000444 
+    ## var4 passed     2.30 0.000619
 
 ``` r
 raftery.diag(full_data_draws)
@@ -260,10 +289,150 @@ raftery.diag(full_data_draws)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  28       29575 3746         7.90      
-    ##  12       15256 3746         4.07      
-    ##  9        12462 3746         3.33      
-    ##  24       36072 3746         9.63
+    ##  2        3706  3746         0.989     
+    ##  2        3787  3746         1.010     
+    ##  1        3755  3746         1.000     
+    ##  2        3702  3746         0.988
+
+``` r
+# Apply individually 
+check_heidel <- function(x) {
+  
+  x %>% as.mcmc() %>% heidel.diag()
+  
+}
+
+check_raftery <- function(x) {
+  
+  x %>% as.mcmc() %>% raftery.diag()
+  
+}
+
+lapply(results_recentered, check_heidel)
+```
+
+    ## [[1]]
+    ##                                    
+    ##      Stationarity start     p-value
+    ##      test         iteration        
+    ## var1 passed       1         0.523  
+    ## var2 passed       1         0.620  
+    ## var3 passed       1         0.235  
+    ## var4 passed       1         0.652  
+    ##                               
+    ##      Halfwidth Mean  Halfwidth
+    ##      test                     
+    ## var1 passed    -2.98 0.001490 
+    ## var2 passed     3.77 0.001851 
+    ## var3 passed     1.08 0.000916 
+    ## var4 passed     2.30 0.001296 
+    ## 
+    ## [[2]]
+    ##                                    
+    ##      Stationarity start     p-value
+    ##      test         iteration        
+    ## var1 passed       1         0.708  
+    ## var2 passed       1         0.734  
+    ## var3 passed       1         0.183  
+    ## var4 passed       1         0.180  
+    ##                               
+    ##      Halfwidth Mean  Halfwidth
+    ##      test                     
+    ## var1 passed    -2.98 0.001444 
+    ## var2 passed     3.77 0.001870 
+    ## var3 passed     1.08 0.000971 
+    ## var4 passed     2.30 0.001323 
+    ## 
+    ## [[3]]
+    ##                                    
+    ##      Stationarity start     p-value
+    ##      test         iteration        
+    ## var1 passed       1         0.366  
+    ## var2 passed       1         0.287  
+    ## var3 passed       1         0.924  
+    ## var4 passed       1         0.742  
+    ##                               
+    ##      Halfwidth Mean  Halfwidth
+    ##      test                     
+    ## var1 passed    -2.98 0.001338 
+    ## var2 passed     3.77 0.001664 
+    ## var3 passed     1.08 0.000826 
+    ## var4 passed     2.30 0.001149 
+    ## 
+    ## [[4]]
+    ##                                    
+    ##      Stationarity start     p-value
+    ##      test         iteration        
+    ## var1 passed       1         0.460  
+    ## var2 passed       1         0.133  
+    ## var3 passed       1         0.545  
+    ## var4 passed       1         0.594  
+    ##                               
+    ##      Halfwidth Mean  Halfwidth
+    ##      test                     
+    ## var1 passed    -2.98 0.001276 
+    ## var2 passed     3.77 0.001709 
+    ## var3 passed     1.08 0.000832 
+    ## var4 passed     2.30 0.001189
+
+``` r
+lapply(results_recentered, check_raftery)
+```
+
+    ## [[1]]
+    ## 
+    ## Quantile (q) = 0.025
+    ## Accuracy (r) = +/- 0.005
+    ## Probability (s) = 0.95 
+    ##                                        
+    ##  Burn-in  Total Lower bound  Dependence
+    ##  (M)      (N)   (Nmin)       factor (I)
+    ##  2        3696  3746         0.987     
+    ##  2        3802  3746         1.010     
+    ##  2        3710  3746         0.990     
+    ##  2        3650  3746         0.974     
+    ## 
+    ## 
+    ## [[2]]
+    ## 
+    ## Quantile (q) = 0.025
+    ## Accuracy (r) = +/- 0.005
+    ## Probability (s) = 0.95 
+    ##                                        
+    ##  Burn-in  Total Lower bound  Dependence
+    ##  (M)      (N)   (Nmin)       factor (I)
+    ##  2        3650  3746         0.974     
+    ##  2        3680  3746         0.982     
+    ##  2        3741  3746         0.999     
+    ##  2        3680  3746         0.982     
+    ## 
+    ## 
+    ## [[3]]
+    ## 
+    ## Quantile (q) = 0.025
+    ## Accuracy (r) = +/- 0.005
+    ## Probability (s) = 0.95 
+    ##                                        
+    ##  Burn-in  Total Lower bound  Dependence
+    ##  (M)      (N)   (Nmin)       factor (I)
+    ##  2        3741  3746         0.999     
+    ##  2        3771  3746         1.010     
+    ##  2        3771  3746         1.010     
+    ##  2        3771  3746         1.010     
+    ## 
+    ## 
+    ## [[4]]
+    ## 
+    ## Quantile (q) = 0.025
+    ## Accuracy (r) = +/- 0.005
+    ## Probability (s) = 0.95 
+    ##                                        
+    ##  Burn-in  Total Lower bound  Dependence
+    ##  (M)      (N)   (Nmin)       factor (I)
+    ##  2        3561  3746         0.951     
+    ##  2        3802  3746         1.010     
+    ##  2        3680  3746         0.982     
+    ##  2        3802  3746         1.010
 
 ``` r
 #################
@@ -276,7 +445,14 @@ describe_posterior(as.data.frame(full_data_draws))
     ## 
     ## Parameter | Median |         95% CI |   pd |          ROPE | % in ROPE
     ## ----------------------------------------------------------------------
-    ## V1        |  -2.90 | [-3.42, -2.66] | 100% | [-0.10, 0.10] |        0%
-    ## V2        |   3.62 | [ 3.32,  4.53] | 100% | [-0.10, 0.10] |        0%
-    ## V3        |   1.06 | [ 0.94,  1.22] | 100% | [-0.10, 0.10] |        0%
-    ## V4        |   2.28 | [ 2.02,  2.61] | 100% | [-0.10, 0.10] |        0%
+    ## V1        |  -2.98 | [-3.12, -2.84] | 100% | [-0.10, 0.10] |        0%
+    ## V2        |   3.77 | [ 3.59,  3.95] | 100% | [-0.10, 0.10] |        0%
+    ## V3        |   1.08 | [ 0.99,  1.17] | 100% | [-0.10, 0.10] |        0%
+    ## V4        |   2.30 | [ 2.18,  2.43] | 100% | [-0.10, 0.10] |        0%
+
+``` r
+## Truth
+beta
+```
+
+    ## [1] -3.0  3.8  1.1  2.3
