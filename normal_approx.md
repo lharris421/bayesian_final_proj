@@ -190,6 +190,7 @@ inner_draws <- function(i, X, y, N, NN = 1e4) {
   ## Draw from multivariate normal
   ## beta_draws <- MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
   ## return(beta_draws)
+  set.seed(666) # Added seed
   MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
 }
 
@@ -266,17 +267,17 @@ heidel.diag(full_data_draws)
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.965  
-    ## var2 passed       1         0.913  
-    ## var3 passed       1         0.884  
-    ## var4 passed       1         0.945  
+    ## var1 passed       1         0.988  
+    ## var2 passed       1         0.984  
+    ## var3 passed       1         0.976  
+    ## var4 passed       1         0.986  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.000702 
-    ## var2 passed     3.77 0.000888 
-    ## var3 passed     1.08 0.000444 
-    ## var4 passed     2.30 0.000619
+    ## var1 passed    -2.98 0.000645 
+    ## var2 passed     3.77 0.000852 
+    ## var3 passed     1.08 0.000442 
+    ## var4 passed     2.30 0.000557
 
 ``` r
 raftery.diag(full_data_draws)
@@ -289,10 +290,10 @@ raftery.diag(full_data_draws)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  2        3706  3746         0.989     
-    ##  2        3787  3746         1.010     
-    ##  1        3755  3746         1.000     
-    ##  2        3702  3746         0.988
+    ##  2        3642  3746         0.972     
+    ##  2        3710  3746         0.990     
+    ##  2        3717  3746         0.992     
+    ##  2        3779  3746         1.010
 
 ``` r
 # Apply individually 
@@ -315,65 +316,65 @@ lapply(results_recentered, check_heidel)
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.523  
-    ## var2 passed       1         0.620  
-    ## var3 passed       1         0.235  
-    ## var4 passed       1         0.652  
+    ## var1 passed       1         0.646  
+    ## var2 passed       1         0.656  
+    ## var3 passed       1         0.463  
+    ## var4 passed       1         0.627  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.001490 
-    ## var2 passed     3.77 0.001851 
-    ## var3 passed     1.08 0.000916 
-    ## var4 passed     2.30 0.001296 
+    ## var1 passed    -2.98 0.001442 
+    ## var2 passed     3.77 0.001838 
+    ## var3 passed     1.08 0.000923 
+    ## var4 passed     2.30 0.001272 
     ## 
     ## [[2]]
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.708  
-    ## var2 passed       1         0.734  
-    ## var3 passed       1         0.183  
-    ## var4 passed       1         0.180  
+    ## var1 passed       1         0.641  
+    ## var2 passed       1         0.530  
+    ## var3 passed       1         0.806  
+    ## var4 passed       1         0.736  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.001444 
-    ## var2 passed     3.77 0.001870 
-    ## var3 passed     1.08 0.000971 
-    ## var4 passed     2.30 0.001323 
+    ## var1 passed    -2.98 0.001473 
+    ## var2 passed     3.77 0.001869 
+    ## var3 passed     1.08 0.000966 
+    ## var4 passed     2.30 0.001307 
     ## 
     ## [[3]]
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.366  
-    ## var2 passed       1         0.287  
-    ## var3 passed       1         0.924  
-    ## var4 passed       1         0.742  
+    ## var1 passed       1         0.617  
+    ## var2 passed       1         0.621  
+    ## var3 passed       1         0.464  
+    ## var4 passed       1         0.787  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.001338 
-    ## var2 passed     3.77 0.001664 
-    ## var3 passed     1.08 0.000826 
-    ## var4 passed     2.30 0.001149 
+    ## var1 passed    -2.98 0.001332 
+    ## var2 passed     3.77 0.001662 
+    ## var3 passed     1.08 0.000833 
+    ## var4 passed     2.30 0.001133 
     ## 
     ## [[4]]
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.460  
-    ## var2 passed       1         0.133  
-    ## var3 passed       1         0.545  
-    ## var4 passed       1         0.594  
+    ## var1 passed       1         0.656  
+    ## var2 passed       1         0.673  
+    ## var3 passed       1         0.585  
+    ## var4 passed       1         0.571  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.001276 
-    ## var2 passed     3.77 0.001709 
-    ## var3 passed     1.08 0.000832 
-    ## var4 passed     2.30 0.001189
+    ## var1 passed    -2.98 0.001312 
+    ## var2 passed     3.77 0.001719 
+    ## var3 passed     1.08 0.000831 
+    ## var4 passed     2.30 0.001199
 
 ``` r
 lapply(results_recentered, check_raftery)
@@ -387,10 +388,10 @@ lapply(results_recentered, check_raftery)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  2        3696  3746         0.987     
-    ##  2        3802  3746         1.010     
-    ##  2        3710  3746         0.990     
+    ##  2        3590  3746         0.958     
+    ##  2        3680  3746         0.982     
     ##  2        3650  3746         0.974     
+    ##  2        3741  3746         0.999     
     ## 
     ## 
     ## [[2]]
@@ -401,10 +402,10 @@ lapply(results_recentered, check_raftery)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  2        3650  3746         0.974     
     ##  2        3680  3746         0.982     
-    ##  2        3741  3746         0.999     
-    ##  2        3680  3746         0.982     
+    ##  2        3710  3746         0.990     
+    ##  2        3710  3746         0.990     
+    ##  2        3834  3746         1.020     
     ## 
     ## 
     ## [[3]]
@@ -415,10 +416,10 @@ lapply(results_recentered, check_raftery)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  2        3741  3746         0.999     
-    ##  2        3771  3746         1.010     
-    ##  2        3771  3746         1.010     
-    ##  2        3771  3746         1.010     
+    ##  2        3650  3746         0.974     
+    ##  2        3710  3746         0.990     
+    ##  2        3650  3746         0.974     
+    ##  2        3834  3746         1.020     
     ## 
     ## 
     ## [[4]]
@@ -429,10 +430,10 @@ lapply(results_recentered, check_raftery)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  2        3561  3746         0.951     
+    ##  2        3650  3746         0.974     
     ##  2        3802  3746         1.010     
-    ##  2        3680  3746         0.982     
-    ##  2        3802  3746         1.010
+    ##  2        3710  3746         0.990     
+    ##  2        3620  3746         0.966
 
 ``` r
 #################
@@ -448,7 +449,7 @@ describe_posterior(as.data.frame(full_data_draws))
     ## V1        |  -2.98 | [-3.12, -2.84] | 100% | [-0.10, 0.10] |        0%
     ## V2        |   3.77 | [ 3.59,  3.95] | 100% | [-0.10, 0.10] |        0%
     ## V3        |   1.08 | [ 0.99,  1.17] | 100% | [-0.10, 0.10] |        0%
-    ## V4        |   2.30 | [ 2.18,  2.43] | 100% | [-0.10, 0.10] |        0%
+    ## V4        |   2.30 | [ 2.18,  2.42] | 100% | [-0.10, 0.10] |        0%
 
 ``` r
 ## Truth

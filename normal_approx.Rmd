@@ -188,6 +188,7 @@ inner_draws <- function(i, X, y, N, NN = 1e4) {
   ## Draw from multivariate normal
   ## beta_draws <- MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
   ## return(beta_draws)
+  set.seed(666) # Added seed
   MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
 }
 
