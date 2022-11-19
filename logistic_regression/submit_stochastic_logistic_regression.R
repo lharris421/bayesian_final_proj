@@ -11,7 +11,7 @@ system("rm /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_r
 ### Also include combining data in this file
 
 ## Number of partitions
-npart <- 50
+npart <- 25
 
 ## Submit the partitioning script
 sub_command <- glue(
@@ -21,16 +21,16 @@ sub_command <- glue(
 
 system(sub_command, intern = FALSE)
 
-continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/")) < npart
-i <- 0
-
-while (continue & i < 100) {
-  
-  Sys.sleep(10)
-  i <- 1 + 1
-  continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/")) < npary
-  
-}
+# continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/")) < npart
+# i <- 0
+# 
+# while (continue & i < 100) {
+#   
+#   Sys.sleep(10)
+#   i <- 1 + 1
+#   continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/")) < npary
+#   
+# }
 
 ## submit command
 sub_command <- glue(
@@ -41,16 +41,16 @@ sub_command <- glue(
 system(sub_command, intern = FALSE)
 
 ## Check every minute if all the files are there before combining
-continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/")) < npart
-i <- 0
-
-while (continue & i < 100) {
-  
-  Sys.sleep(10)
-  i <- 1 + 1
-  continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/")) < npary
-  
-}
+# continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/")) < npart
+# i <- 0
+# 
+# while (continue & i < 100) {
+#   
+#   Sys.sleep(10)
+#   i <- 1 + 1
+#   continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/")) < npary
+#   
+# }
 
 
 ####### LOG INTO COMPUTE NODE BEFORE PROCEEDING ################################
@@ -122,7 +122,7 @@ sampleBetas <- function (betaList) {
   )
 }
 
-npart <- 250
+npart <- 50
 
 results <- list()
 for (i in 1:npart) {
