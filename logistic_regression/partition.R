@@ -5,8 +5,8 @@ library(dplyr)
 ### Partition and save the data temporarily
 load("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/full_data_2.rds")
 
-head(mod_dat)
-table(mod_dat$carrier, mod_dat$proc)
+## head(mod_dat)
+## table(mod_dat$carrier, mod_dat$proc)
 
 score <- mod_dat %>% select_at(vars(CHF:Depression)) %>% rowSums()
 full_data <- mod_dat %>%

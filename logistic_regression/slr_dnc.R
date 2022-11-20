@@ -32,8 +32,12 @@ resStan <- stan(model_code = stanCode, data = dat,
                 chains = 1, iter = 10000, warmup = 5000, thin = 5)
 
 ## Check
+## library(bayestestR)
+## describe_posterior(as.data.frame(resStan))
+
 
 res <- do.call(cbind, resStan@sim$samples[[1]][1:ncol(x0)])
+## describe_posterior(as.data.frame(res))
 
 fname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/res{i}.rds")
 save(res, file = fname)
