@@ -41,9 +41,9 @@ resStan <- stan(model_code = stanCode, data = dat,
 res <- do.call(cbind, resStan@sim$samples[[1]][1:ncol(x0)])
 ## describe_posterior(as.data.frame(res))
 
-fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/res{i}.rds")
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/stan/res{i}.rds")
 save(res, file = fname)
 
 end_time <- Sys.time()
-save(end_time - start_time, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/time{i}.rds"))
+save(end_time - start_time, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/stan/time{i}.rds"))
 
