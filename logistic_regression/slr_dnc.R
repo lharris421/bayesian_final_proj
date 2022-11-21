@@ -1,7 +1,6 @@
 ##
 library(rstan)
 library(glue)
-library(tictoc)
 
 ## Get index number
 args = commandArgs(trailingOnly=TRUE)
