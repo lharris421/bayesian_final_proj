@@ -6,9 +6,8 @@ library(mvtnorm)
 library(tidyverse)
 library(magrittr)
 
-  
 
-## Simulate Data
+## Simulate Data -------------------------------------------------------------
 set.seed(666)
 N <- 1e4
 x1 <- rnorm(N)           # some continuous variables 
@@ -21,7 +20,7 @@ pr <- 1/(1+exp(-eta))         # pass through an inv-logit function
 y <- rbinom(N,1,pr)  
 
 
-## Flat prior
+## Flat prior ---------------------------------------------------------------
   
 log_post_fun <- function(param){
   sum(y*X%*%param - log(1 + exp(X%*%param)))
@@ -37,8 +36,7 @@ Opt <- optim(par = c(10,0,2,1),
 
 (Opt$par)
 
-
-## Multivariate normal prior
+## Multivariate normal prior ------------------------------------------------
 mu <- rep(0,4)
 sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(X[,-1])))))
 
@@ -60,7 +58,7 @@ SigNew <-  chol2inv(chol(-Opt$hessian))
 ## Draw from multivariate normal
 beta_draws <- MASS::mvrnorm(1e4, mu = params, Sigma = SigNew)
 
-## 
+## Summary
 beta
 describe_posterior(as.data.frame(beta_draws))
 
@@ -119,7 +117,7 @@ inner_draws <- function(i, X, y, N, NN = 1e4) {
   fold_data_X <- X[fold_idx == i,]
   
   #priors
-  sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(fold_data_X[,-1])))))
+  sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(fold_data_X[,-1]))))) # need to make sure we only scale continuous vars
   mu <- rep(0,4)
   
   Opt <- optim_fun(init = rep(0, ncol(fold_data_X)),

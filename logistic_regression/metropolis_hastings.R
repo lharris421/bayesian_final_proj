@@ -26,7 +26,7 @@ y <- rbinom(N, 1, pr)
 
 ## Prior values
 mu <- rep(0,4)
-sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(X[,-1])))))
+sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(X[,-1])))))  # need to make sure we only scale continuous vars
 
 log_post_fun <- function(param) {
   sum(y*X%*%param - log(1 + exp(X%*%param))) -
