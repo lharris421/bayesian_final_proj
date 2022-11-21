@@ -146,7 +146,7 @@ K <- 4
 ## Why create folds this way? Why not force a balance? YOU ARE CORRECT!
 ## i.e. (sample(1:N, replace = FALSE)) %% 4 + 1
 # fold_idx <- sample(1:K, size = N, replace = TRUE)
-fold_idx <- (sample(1:N, replace = FALSE)) %% 4 + 1
+fold_idx <- (sample(1:N, replace = FALSE)) %% K + 1
 
 cl <- makeCluster(min(detectCores(), K))
 clusterExport(
@@ -186,7 +186,6 @@ full_data_draws <- do.call(rbind, results_recentered)
 #### Diagnostics ####
 #####################
 
-# Looks bad
 full_data_draws <- full_data_draws %>% as.mcmc()
 heidel.diag(full_data_draws)
 raftery.diag(full_data_draws)
