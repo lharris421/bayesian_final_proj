@@ -5,6 +5,7 @@
 
 ## Need to make this into a function that submits to argon
 sd_prop <- .25
+m <- 12257035
 
 log_post_fun <- function(param, X, y, N, m, sigma, mu) {
   

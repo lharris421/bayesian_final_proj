@@ -29,7 +29,6 @@ transformed parameters {
 }
 
 model {
-  
   for (ii in 1:n) {
     y[ii] ~ stoc_binomial(ntrail, prob[ii], nrep);
   }  

@@ -35,7 +35,7 @@ for (i in 1:npart) {
   
   y0 <- as.numeric(unlist(full_data[partitions == i,"proc"]))
   x0 <- as.matrix(full_data)[partitions == i, -1]
-  nrep0 <- length(y0)
+  nrep0 <- nrow(full_data) / nrow(x0)
   name0 <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/partition{i}.rds")
   save(
     y0,

@@ -33,12 +33,16 @@ system(sub_command, intern = FALSE)
 # }
 
 ## submit command
-sub_command <- glue(
-  "#!/bin/bash 
-  qsub -pe smp -2 -cwd -e /dev/null -o /dev/null -t 1-{npart} /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/slr.job"
-)
+# sub_command <- glue(
+#   "#!/bin/bash 
+#   qsub -pe smp -2 -cwd -e /dev/null -o /dev/null -t 1-{npart} /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/slr.job"
+# )
+# 
+# system(sub_command, intern = FALSE)
 
-system(sub_command, intern = FALSE)
+
+## RUN THIS INSTEAD ON LOGIN NODE
+## qsub -pe smp -2 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/err -o /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/out -t 1-25 /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/slr.job
 
 ## Check every minute if all the files are there before combining
 # continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/")) < npart
@@ -122,7 +126,7 @@ sampleBetas <- function (betaList) {
   )
 }
 
-npart <- 50
+npart <- 25
 
 results <- list()
 for (i in 1:npart) {
