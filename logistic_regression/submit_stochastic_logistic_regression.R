@@ -61,9 +61,83 @@ system(sub_command, intern = FALSE)
 
 
 ####### LOG INTO COMPUTE NODE BEFORE PROCEEDING ################################
+all_counts <- numeric(25)
+library(glue)
+library(magrittr)
+library(bayestestR)
+library(coda)
+library(dplyr)
+for (j in 1:25) {
+  load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/acc_counts/acc_counts{j}.rds"))
+  all_counts[j] <- acc_counts
+}
+
+min(all_counts)
+max(all_counts)
+mean(all_counts) / 10000
+
+results <- list()
+for (j in 1:25) {
+  load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh/res{j}.rds"))
+  results[[j]] <- res
+}
+
+
+# Apply individually 
+check_heidel <- function(x) {
+  
+  x %>% as.mcmc() %>% heidel.diag()
+  
+}
+
+check_raftery <- function(x) {
+  
+  x %>% as.mcmc() %>% raftery.diag()
+  
+}
+
+lapply(results, check_heidel)
+lapply(results, check_raftery)
+
+remove_burnin <- function(x, burnin) {
+  
+  x[-(1:burnin),]
+  
+}
+
+results <- lapply(results, remove_burnin, 1000)
 
 
 
+########################
+#### Recenter Draws ####
+########################
+K <- 25
+subset_mean <- t(sapply(1:K, function(i) colMeans(results[[i]]))) # rows indicate subset
+## This step was slightly off... it assumed perfect balance
+## global_mean <- colMeans(subset_mean)
+global_mean <- colMeans(bind_rows(lapply(results, data.frame)))
+recenter <- t(sapply(1:K, function(i) subset_mean[i, ] - global_mean)) # rows indicate subset
+## Should this be minus?
+results_recentered <- lapply(1:K,function(i) results[[i]] - matrix(recenter[i, ],
+                                                                   nrow = nrow(results[[i]]),
+                                                                   ncol = ncol(results[[i]]),
+                                                                   byrow = T))
+full_data_draws <- do.call(rbind, results_recentered)
+
+
+#####################
+#### Diagnostics ####
+#####################
+
+full_data_draws <- full_data_draws %>% as.mcmc()
+heidel.diag(full_data_draws)
+raftery.diag(full_data_draws)
+
+#################
+#### Summary ####
+#################
+describe_posterior(as.data.frame(full_data_draws))
 
 ###### Combine everything
 computeBarycenter <- function (meanList, covList) {
@@ -129,16 +203,22 @@ sampleBetas <- function (betaList) {
   )
 }
 
-npart <- 25
 
-results <- list()
-for (i in 1:npart) {
-  fname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/res{i}.rds")
-  load(fname)
-  results[[sid]] <- res[-(1:1000), ]
-}
+# results <- list()
+# for (i in 1:npart) {
+#   fname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/res{i}.rds")
+#   load(fname)
+#   results[[sid]] <- res[-(1:1000), ]
+# }
+
+
 bary <- sampleBetas(results)
 
-rname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/final_results/results_250.rds")
-save(bary, file = rname)
+head(bary)
 
+## rname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/final_results/results_250.rds")
+## save(bary, file = rname)
+
+bary_res <- bind_rows(bary)
+describe_posterior(as.data.frame(full_data_draws))
+tst <- describe_posterior(as.data.frame(as.mcmc(bary_res)))

@@ -13,7 +13,7 @@ if (length(args) == 0){
 start_time <- Sys.time()
 
 ## Load the subset of the data
-load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/partition{j}.rds"))
+load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/large/partition{j}.rds"))
 
 ## Call individual submission
 ## Need to make this into a function that submits to argon
@@ -31,7 +31,7 @@ log_post_fun <- function(param, X, y, N, m, sigma, mu) {
 
 inner_draws <- function(X, y, N, NN = 1e4) {
   
-  #priors
+  # priors
   sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(X)))))
   mu <- rep(0, ncol(X) + 1)
   
@@ -85,13 +85,13 @@ acc_counts <- res_full[[2]]
 
 ## describe_posterior(as.data.frame(res))
 
-fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh/res{j}.rds")
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res{j}.rds")
 save(res, file = fname)
 
-fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/acc_counts/acc_counts{j}.rds")
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/acc_counts/mh_large/acc_counts{j}.rds")
 save(acc_counts, file = fname)
 
 end_time <- Sys.time()
 tdiff <- end_time - start_time
-fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh/time{j}.rds")
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/time{j}.rds")
 save(tdiff, file = fname)

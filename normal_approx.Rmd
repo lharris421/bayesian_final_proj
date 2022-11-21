@@ -47,13 +47,8 @@ Therefore,
 
 $$
 \begin{aligned}
-<<<<<<< HEAD
-\ell(\pi({\boldsymbol{\theta}}|\mathrm{\bf{y}}) ) 
-= \sum_{i=1}^n (y_i\mathrm{\bf{x}_i^\top\boldsymbol{\beta}} - \log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})) - \frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu}) + C\\
-=======
 \log(\pi({\boldsymbol{\theta}}|\mathrm{\bf{y}}) ) 
-= \sum_{i=1}^n (y_i\mathrm{\bf{x}_i^\top\boldsymbol{\beta}} - n\log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})) - \frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu}) + C\\
->>>>>>> f9af2920d33a63b8beab9bd47e5b3b0286adfa5a
+= \sum_{i=1}^n (y_i\mathrm{\bf{x}_i^\top\boldsymbol{\beta}} - \log(1+\exp\{\mathrm{\bf{x}_i^\top\boldsymbol{\beta}}\})) - \frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu}) + C\\
 \end{aligned}
 $$
 for subset j
