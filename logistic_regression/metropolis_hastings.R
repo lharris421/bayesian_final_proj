@@ -26,7 +26,7 @@ y <- rbinom(N, 1, pr)
 
 ## Prior values
 mu <- rep(0,4)
-sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(X[,-1])))))
+sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(X[,-1])))))  # need to make sure we only scale continuous vars
 
 log_post_fun <- function(param) {
   sum(y*X%*%param - log(1 + exp(X%*%param))) -
@@ -129,7 +129,8 @@ inner_draws <- function(i, X, y, N, NN = 1e4) {
 # Create folds
 set.seed(666)
 K <- 4
-fold_idx <- sample(1:K, size = N, replace = TRUE)
+# fold_idx <- sample(1:K, size = N, replace = TRUE)
+fold_idx <- (sample(1:N, replace = FALSE)) %% K + 1
 
 cl <- makeCluster(min(detectCores(), K))
 clusterExport(

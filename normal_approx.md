@@ -24,7 +24,7 @@ $$
 
 $$
 \begin{aligned}
-\ell(\pi({\boldsymbol{\theta}}\|y_i) ) &\propto y_i \log(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}})+(1-y_i) \log(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}) -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
+\log(\pi({\boldsymbol{\theta}}\|y_i) ) &\propto y_i \log(\frac{\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}})+(1-y_i) \log(\frac{1}{1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\}}) -\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
 &\propto  y_i\log(\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})- y_i\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})-\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})+ y_i \log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
 &\propto y_i\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}} -\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})-\frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu})\\\\
 \end{aligned}
@@ -34,8 +34,15 @@ Therefore,
 
 $$
 \begin{aligned}
-\ell(\pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}}) ) 
+\log(\pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}}) ) 
 = \sum\_{i=1}^n (y_i\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}} - n\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})) - \frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu}) + C\\\\
+\end{aligned}
+$$
+for subset j
+$$
+\begin{aligned}
+\log(\pi({\boldsymbol{\theta}}\|\mathrm{y}\_j) ) 
+= \Big(\frac{n}{m_j}\Big) \sum\_{i=1}^{m_j} (y_i\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}} - m_j\log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})) - \frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu}) + C\\\\
 \end{aligned}
 $$
 
@@ -45,8 +52,8 @@ $$
 ## Simulate Data
 set.seed(666)
 N <- 1e4
-x1 <- rnorm(N)           # some continuous variables 
-x2 <- rnorm(N)
+x1 <- rnorm(N, sd = 3)           # some continuous variables 
+x2 <- rnorm(N, sd = 10)
 x3 <-rnorm(N)
 beta <- c(-2, 0.11,1.34,2.3)
 X <-  cbind(1, x1,x2,x3)
@@ -73,12 +80,25 @@ Opt <- optim(par = c(10,0,2,1),
 (Opt$par)
 ```
 
-    ## [1] -2.0175748  0.2042642  1.3838705  2.3357465
+    ## [1] -2.2037901  0.1233374  1.4126835  2.4478958
 
 **Posterior with multivariate normal prior (non-D&C)**
 
 ``` r
 mu <- rep(0,4)
+
+# need to only scale continuous vars in design matrix
+# one way to identify dummy var columns in design matrix is to count unique in column and if > 2
+# then it is continuous but could be computational expensive
+# especially if n is large,
+
+scale_vars <- sapply(1:ncol(X), function(i) length(unique(X[,i])) > 2)
+var_scale_vars <- diag(var(X[,scale_vars]))
+scaled <- rep(1, ncol(X))
+scaled[which(scale_vars)] <- var_scale_vars
+sigma <- diag(c(40^2, rep(3^2, ncol(X)-1)) *sqrt(scaled))
+
+# Orto make it faster we can just hard code priors which is what we shoud do
 sigma <- diag(c(40^2, 3^2 *sqrt(diag(var(X[,-1])))))
 
 log_post_fun <- function(param) {
@@ -99,7 +119,7 @@ SigNew <-  chol2inv(chol(-Opt$hessian))
 ## Draw from multivariate normal
 beta_draws <- MASS::mvrnorm(1e4, mu = params, Sigma = SigNew)
 
-## 
+## Summary
 beta
 ```
 
@@ -113,10 +133,10 @@ describe_posterior(as.data.frame(beta_draws))
     ## 
     ## Parameter | Median |         95% CI |   pd |          ROPE | % in ROPE
     ## ----------------------------------------------------------------------
-    ## V1        |  -2.02 | [-2.10, -1.93] | 100% | [-0.10, 0.10] |        0%
-    ## V2        |   0.20 | [ 0.14,  0.27] | 100% | [-0.10, 0.10] |        0%
-    ## V3        |   1.38 | [ 1.30,  1.46] | 100% | [-0.10, 0.10] |        0%
-    ## V4        |   2.34 | [ 2.23,  2.44] | 100% | [-0.10, 0.10] |        0%
+    ## V1        |  -2.20 | [-2.39, -2.02] | 100% | [-0.10, 0.10] |        0%
+    ## V2        |   0.12 | [ 0.08,  0.16] | 100% | [-0.10, 0.10] |    11.18%
+    ## V3        |   1.41 | [ 1.32,  1.50] | 100% | [-0.10, 0.10] |        0%
+    ## V4        |   2.45 | [ 2.25,  2.64] | 100% | [-0.10, 0.10] |        0%
 
 **Posterior with multivariate normal prior (D&C)**
 
@@ -127,8 +147,8 @@ describe_posterior(as.data.frame(beta_draws))
 
 set.seed(666)
 N <- 1e4
-x1 <- rnorm(N)           # some continuous variables 
-x2 <- rnorm(N)
+x1 <- rnorm(N, sd = 3)           # some continuous variables 
+x2 <- rnorm(N, sd = 10)
 x3 <-rnorm(N)
 beta <- c(-3, 3.8, 1.1, 2.3) # True Betas
 X <- cbind(1, x1, x2, x3)
@@ -173,7 +193,8 @@ inner_draws <- function(i, X, y, N, NN = 1e4) {
   fold_data_X <- X[fold_idx == i,]
   
   #priors
-  sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(fold_data_X[,-1])))))
+  scaling <- var(fold_data_X[,-1])
+  sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(fold_data_X[,-1]))))) # need to make sure we only scale continuous vars
   mu <- rep(0,4)
   
   Opt <- optim_fun(init = rep(0, ncol(fold_data_X)),
@@ -267,17 +288,17 @@ heidel.diag(full_data_draws)
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.988  
-    ## var2 passed       1         0.984  
-    ## var3 passed       1         0.976  
-    ## var4 passed       1         0.986  
+    ## var1 passed       1         0.973  
+    ## var2 passed       1         0.988  
+    ## var3 passed       1         0.987  
+    ## var4 passed       1         1.000  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.000645 
-    ## var2 passed     3.77 0.000852 
-    ## var3 passed     1.08 0.000442 
-    ## var4 passed     2.30 0.000557
+    ## var1 passed    -3.00 0.001171 
+    ## var2 passed     3.89 0.001357 
+    ## var3 passed     1.14 0.000403 
+    ## var4 passed     2.22 0.000933
 
 ``` r
 raftery.diag(full_data_draws)
@@ -290,10 +311,10 @@ raftery.diag(full_data_draws)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  2        3642  3746         0.972     
-    ##  2        3710  3746         0.990     
-    ##  2        3717  3746         0.992     
-    ##  2        3779  3746         1.010
+    ##  2        3710  3746         0.99      
+    ##  1        3755  3746         1.00      
+    ##  2        3771  3746         1.01      
+    ##  2        3810  3746         1.02
 
 ``` r
 # Apply individually 
@@ -316,65 +337,65 @@ lapply(results_recentered, check_heidel)
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.646  
-    ## var2 passed       1         0.656  
-    ## var3 passed       1         0.463  
-    ## var4 passed       1         0.627  
+    ## var1 passed       1         0.516  
+    ## var2 passed       1         0.588  
+    ## var3 passed       1         0.590  
+    ## var4 passed       1         0.827  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.001442 
-    ## var2 passed     3.77 0.001838 
-    ## var3 passed     1.08 0.000923 
-    ## var4 passed     2.30 0.001272 
+    ## var1 passed    -3.00 0.002248 
+    ## var2 passed     3.89 0.002457 
+    ## var3 passed     1.14 0.000715 
+    ## var4 passed     2.22 0.001861 
     ## 
     ## [[2]]
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.641  
-    ## var2 passed       1         0.530  
-    ## var3 passed       1         0.806  
-    ## var4 passed       1         0.736  
+    ## var1 passed       1         0.521  
+    ## var2 passed       1         0.586  
+    ## var3 passed       1         0.595  
+    ## var4 passed       1         0.798  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.001473 
-    ## var2 passed     3.77 0.001869 
-    ## var3 passed     1.08 0.000966 
-    ## var4 passed     2.30 0.001307 
+    ## var1 passed    -3.00 0.002615 
+    ## var2 passed     3.89 0.003088 
+    ## var3 passed     1.14 0.000934 
+    ## var4 passed     2.22 0.002203 
     ## 
     ## [[3]]
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.617  
-    ## var2 passed       1         0.621  
-    ## var3 passed       1         0.464  
-    ## var4 passed       1         0.787  
+    ## var1 passed       1         0.520  
+    ## var2 passed       1         0.586  
+    ## var3 passed       1         0.592  
+    ## var4 passed       1         0.826  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.001332 
-    ## var2 passed     3.77 0.001662 
-    ## var3 passed     1.08 0.000833 
-    ## var4 passed     2.30 0.001133 
+    ## var1 passed    -3.00 0.002538 
+    ## var2 passed     3.89 0.002970 
+    ## var3 passed     1.14 0.000865 
+    ## var4 passed     2.22 0.002080 
     ## 
     ## [[4]]
     ##                                    
     ##      Stationarity start     p-value
     ##      test         iteration        
-    ## var1 passed       1         0.656  
-    ## var2 passed       1         0.673  
-    ## var3 passed       1         0.585  
-    ## var4 passed       1         0.571  
+    ## var1 passed       1         0.517  
+    ## var2 passed       1         0.585  
+    ## var3 passed       1         0.589  
+    ## var4 passed       1         0.805  
     ##                               
     ##      Halfwidth Mean  Halfwidth
     ##      test                     
-    ## var1 passed    -2.98 0.001312 
-    ## var2 passed     3.77 0.001719 
-    ## var3 passed     1.08 0.000831 
-    ## var4 passed     2.30 0.001199
+    ## var1 passed    -3.00 0.002441 
+    ## var2 passed     3.89 0.002750 
+    ## var3 passed     1.14 0.000802 
+    ## var4 passed     2.22 0.002062
 
 ``` r
 lapply(results_recentered, check_raftery)
@@ -388,10 +409,10 @@ lapply(results_recentered, check_raftery)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  2        3590  3746         0.958     
-    ##  2        3680  3746         0.982     
-    ##  2        3650  3746         0.974     
-    ##  2        3741  3746         0.999     
+    ##  2        3710  3746         0.99      
+    ##  2        3771  3746         1.01      
+    ##  2        3710  3746         0.99      
+    ##  2        3771  3746         1.01      
     ## 
     ## 
     ## [[2]]
@@ -402,10 +423,10 @@ lapply(results_recentered, check_raftery)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
+    ##  2        3741  3746         0.999     
+    ##  2        3710  3746         0.990     
     ##  2        3680  3746         0.982     
-    ##  2        3710  3746         0.990     
-    ##  2        3710  3746         0.990     
-    ##  2        3834  3746         1.020     
+    ##  2        3771  3746         1.010     
     ## 
     ## 
     ## [[3]]
@@ -416,10 +437,10 @@ lapply(results_recentered, check_raftery)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  2        3650  3746         0.974     
+    ##  2        3680  3746         0.982     
     ##  2        3710  3746         0.990     
-    ##  2        3650  3746         0.974     
-    ##  2        3834  3746         1.020     
+    ##  2        3710  3746         0.990     
+    ##  2        3802  3746         1.010     
     ## 
     ## 
     ## [[4]]
@@ -430,10 +451,10 @@ lapply(results_recentered, check_raftery)
     ##                                        
     ##  Burn-in  Total Lower bound  Dependence
     ##  (M)      (N)   (Nmin)       factor (I)
-    ##  2        3650  3746         0.974     
-    ##  2        3802  3746         1.010     
+    ##  2        3741  3746         0.999     
     ##  2        3710  3746         0.990     
-    ##  2        3620  3746         0.966
+    ##  2        3710  3746         0.990     
+    ##  2        3741  3746         0.999
 
 ``` r
 #################
@@ -446,10 +467,10 @@ describe_posterior(as.data.frame(full_data_draws))
     ## 
     ## Parameter | Median |         95% CI |   pd |          ROPE | % in ROPE
     ## ----------------------------------------------------------------------
-    ## V1        |  -2.98 | [-3.12, -2.84] | 100% | [-0.10, 0.10] |        0%
-    ## V2        |   3.77 | [ 3.59,  3.95] | 100% | [-0.10, 0.10] |        0%
-    ## V3        |   1.08 | [ 0.99,  1.17] | 100% | [-0.10, 0.10] |        0%
-    ## V4        |   2.30 | [ 2.18,  2.42] | 100% | [-0.10, 0.10] |        0%
+    ## V1        |  -3.00 | [-3.25, -2.76] | 100% | [-0.10, 0.10] |        0%
+    ## V2        |   3.89 | [ 3.61,  4.18] | 100% | [-0.10, 0.10] |        0%
+    ## V3        |   1.14 | [ 1.06,  1.23] | 100% | [-0.10, 0.10] |        0%
+    ## V4        |   2.22 | [ 2.01,  2.43] | 100% | [-0.10, 0.10] |        0%
 
 ``` r
 ## Truth
