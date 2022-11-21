@@ -1,6 +1,7 @@
 ##
 library(rstan)
 library(glue)
+library(tictoc)
 
 ## Get index number
 args = commandArgs(trailingOnly=TRUE)
@@ -9,6 +10,8 @@ if (length(args) == 0){
 } else {
   i <- args[[1]]
 }
+
+start_time <- Sys.time()
 
 ## Load the subset of the data
 load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/partition{i}.rds"))
@@ -41,3 +44,7 @@ res <- do.call(cbind, resStan@sim$samples[[1]][1:ncol(x0)])
 
 fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/res{i}.rds")
 save(res, file = fname)
+
+end_time <- Sys.time()
+save(end_time - start_time, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/time{i}.rds"))
+
