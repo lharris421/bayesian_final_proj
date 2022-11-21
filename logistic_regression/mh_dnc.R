@@ -4,34 +4,39 @@ library(glue)
 ## Get index number
 args = commandArgs(trailingOnly=TRUE)
 if (length(args) == 0){
-  i <- 1
+  j <- 1
 } else {
-  i <- args[[1]]
+  j <- args[[1]]
 }
 
+start_time <- Sys.time()
+
 ## Load the subset of the data
-load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/partition{i}.rds"))
+load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/partition{j}.rds"))
 
 ## Call individual submission
 ## Need to make this into a function that submits to argon
-sd_prop <- .25
+sd_prop <- .012
+N <- round(nrep0 * nrow(x0))
 
 log_post_fun <- function(param, X, y, N, m, sigma, mu) {
+  
+  X <- cbind(rep(1, nrow(X)), X)
   
   (N/m)*sum(y*X%*%param - log(1 + exp(X%*%param))) -
     drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
   
 }
 
-inner_draws <- function(X, y, N, NN = 1e5) {
+inner_draws <- function(X, y, N, NN = 1e4) {
   
   #priors
-  sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(X[,-1])))))
-  mu <- rep(0,4)
+  sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(X)))))
+  mu <- rep(0, ncol(X) + 1)
   
-  beta_draws_mh <- matrix(0.0, NN, ncol(X), dimnames = list(NULL,colnames(X)))
+  beta_draws_mh <- matrix(0.0, NN, (ncol(X) + 1))
   
-  glm_data <- bind_cols(y = y, X[,-1])
+  glm_data <- bind_cols(y = y, X)
   glm_fit <- glm(y ~ ., glm_data, family = "binomial")
   beta_draws_mh[1, ] <- coef(glm_fit)
   
@@ -58,6 +63,8 @@ inner_draws <- function(X, y, N, NN = 1e5) {
       
     }
     
+    if (i %% 100 == 0) {print(i)}
+    
   }
   
   return(list(beta_draws_mh, acc_count))
@@ -65,15 +72,25 @@ inner_draws <- function(X, y, N, NN = 1e5) {
 }
 
 
+res_full <- inner_draws(x0, y0, N)
 
+## res_full[[2]] / 10000
 
 ## Check
 ## library(bayestestR)
 ## describe_posterior(as.data.frame(resStan))
+res <- res_full[[1]]
+acc_counts <- res_full[[2]]
 
-
-res <- do.call(cbind, resStan@sim$samples[[1]][1:ncol(x0)])
 ## describe_posterior(as.data.frame(res))
 
-fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/res{i}.rds")
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh/res{j}.rds")
 save(res, file = fname)
+
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/acc_counts/acc_counts{j}.rds")
+save(acc_counts, file = fname)
+
+end_time <- Sys.time()
+tdiff <- end_time - start_time
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh/time{j}.rds")
+save(tdiff, file = fname)
