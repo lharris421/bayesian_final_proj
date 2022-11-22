@@ -1,8 +1,12 @@
-##
+###################
+#### Libraries ####
+###################
 library(glue)
 library(dplyr)
 
-## Get index number
+######################################
+#### Get index from qsub #############
+######################################
 args = commandArgs(trailingOnly=TRUE)
 if (length(args) == 0){
   j <- 1
@@ -12,13 +16,18 @@ if (length(args) == 0){
 
 start_time <- Sys.time()
 
-## Load the subset of the data
+######################################
+#### Load the subset of the data #####
+######################################
 load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/large/partition{j}.rds"))
 
-## Call individual submission
-## Need to make this into a function that submits to argon
-sd_prop <- .012
-N <- round(nrep0 * nrow(x0))
+
+sd_prop <- .012 ## Controls step size of MH algorithm
+N <- round(nrep0 * nrow(x0)) ## Full dataset size, needed for log posterior
+
+################################
+#### Log posterior function ####
+################################
 
 log_post_fun <- function(param, X, y, N, m, sigma, mu) {
   
@@ -28,6 +37,10 @@ log_post_fun <- function(param, X, y, N, m, sigma, mu) {
     drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
   
 }
+
+#####################
+#### Code for MH ####
+#####################
 
 inner_draws <- function(X, y, N, NN = 1e4) {
   
@@ -73,17 +86,16 @@ inner_draws <- function(X, y, N, NN = 1e4) {
 }
 
 
+######################
+#### Run MH ##########
+######################
 res_full <- inner_draws(x0, y0, N)
 
-## res_full[[2]] / 10000
-
-## Check
-## library(bayestestR)
-## describe_posterior(as.data.frame(resStan))
+######################
+#### Save results ####
+######################
 res <- res_full[[1]]
 acc_counts <- res_full[[2]]
-
-## describe_posterior(as.data.frame(res))
 
 fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res{j}.rds")
 save(res, file = fname)

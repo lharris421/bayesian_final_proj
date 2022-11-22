@@ -1,104 +1,75 @@
-library(rstan)
-library(glue)
-library(dplyr)
+## Run on login node
+## If needed to remove previous partitions:
+## rm /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/*
+
+## Submit the partitioning script:
+## qsub -pe smp -2 -cwd -e /dev/null -o /dev/null /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partition.job
 
 
-## clean up folder to store partitions in
-system("rm /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/*", intern = FALSE)
-system("rm /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/*", intern = FALSE)
-
-### Will want to partition and submit here
-### Also include combining data in this file
-
-## Number of partitions
-npart <- 25
-
-## Submit the partitioning script
-sub_command <- glue(
-  "#!/bin/bash 
-  qsub -pe smp -2 -cwd -e /dev/null -o /dev/null /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partition.job"
-)
-
-system(sub_command, intern = FALSE)
-
-# continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/")) < npart
-# i <- 0
-# 
-# while (continue & i < 100) {
-#   
-#   Sys.sleep(10)
-#   i <- 1 + 1
-#   continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partitions/")) < npary
-#   
-# }
-
-## submit command
-# sub_command <- glue(
-#   "#!/bin/bash 
-#   qsub -pe smp -2 -cwd -e /dev/null -o /dev/null -t 1-{npart} /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/slr.job"
-# )
-# 
-# system(sub_command, intern = FALSE)
-
-
-## RUN THIS INSTEAD ON LOGIN NODE
+## Submit the job scripts:
+## stan (currently thinking we get rid of this)
 ## qsub -pe smp -2 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/err -o /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/out -t 1-25 /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/slr.job
 
-## RUN THIS INSTEAD ON LOGIN NODE
+## mh
 ## qsub -q BIOSTAT -pe smp -2 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/err -o /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/out -t 1-25 /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_dnc.job
 
-## Check every minute if all the files are there before combining
-# continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/")) < npart
-# i <- 0
-# 
-# while (continue & i < 100) {
-#   
-#   Sys.sleep(10)
-#   i <- 1 + 1
-#   continue <- length(list.files("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/")) < npary
-#   
-# }
-
-
+################################################################################
 ####### LOG INTO COMPUTE NODE BEFORE PROCEEDING ################################
+################################################################################
+
+################################################################################
+#### Combine the results from MH Runs  #########################################
+################################################################################
 all_counts <- numeric(25)
+
+########################
+#### Libraries #########
+########################
 library(glue)
 library(magrittr)
 library(bayestestR)
 library(coda)
 library(dplyr)
+
+###############################
+#### Check acceptance rate ####
+###############################
+
+all_counts <- numeric(25)
 for (j in 1:25) {
-  load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/acc_counts/acc_counts{j}.rds"))
+  load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/acc_counts/mh_large/acc_counts{j}.rds"))
   all_counts[j] <- acc_counts
 }
 
-min(all_counts)
-max(all_counts)
+min(all_counts) / 10000
+max(all_counts) / 10000
 mean(all_counts) / 10000
+
+###############################
+#### Check average run time ###
+###############################
+
+times <- numeric(25)
+for (j in 1:25) {
+  load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/time{j}.rds"))
+  times[j] <- tdiff
+}
+
+mean(times) ## Minutes
+
+######################################
+#### Put all draws in single list ####
+######################################
 
 results <- list()
 for (j in 1:25) {
-  load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh/res{j}.rds"))
+  load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res{j}.rds"))
   results[[j]] <- res
 }
 
-
-# Apply individually 
-check_heidel <- function(x) {
-  
-  x %>% as.mcmc() %>% heidel.diag()
-  
-}
-
-check_raftery <- function(x) {
-  
-  x %>% as.mcmc() %>% raftery.diag()
-  
-}
-
-lapply(results, check_heidel)
-lapply(results, check_raftery)
-
+########################
+#### Remove burn-in ####
+########################
 remove_burnin <- function(x, burnin) {
   
   x[-(1:burnin),]
@@ -109,16 +80,13 @@ results <- lapply(results, remove_burnin, 1000)
 
 
 
-########################
-#### Recenter Draws ####
-########################
+################################################################################
+#### Recenter Draws using simple method ########################################
+################################################################################
 K <- 25
 subset_mean <- t(sapply(1:K, function(i) colMeans(results[[i]]))) # rows indicate subset
-## This step was slightly off... it assumed perfect balance
-## global_mean <- colMeans(subset_mean)
 global_mean <- colMeans(bind_rows(lapply(results, data.frame)))
 recenter <- t(sapply(1:K, function(i) subset_mean[i, ] - global_mean)) # rows indicate subset
-## Should this be minus?
 results_recentered <- lapply(1:K,function(i) results[[i]] - matrix(recenter[i, ],
                                                                    nrow = nrow(results[[i]]),
                                                                    ncol = ncol(results[[i]]),
@@ -129,7 +97,6 @@ full_data_draws <- do.call(rbind, results_recentered)
 #####################
 #### Diagnostics ####
 #####################
-
 full_data_draws <- full_data_draws %>% as.mcmc()
 heidel.diag(full_data_draws)
 raftery.diag(full_data_draws)
@@ -139,7 +106,9 @@ raftery.diag(full_data_draws)
 #################
 describe_posterior(as.data.frame(full_data_draws))
 
-###### Combine everything
+################################################################################
+###### Combine using WASP approximation ########################################
+################################################################################
 computeBarycenter <- function (meanList, covList) {
   library(matrixStats)
   library(expm)
@@ -204,21 +173,11 @@ sampleBetas <- function (betaList) {
 }
 
 
-# results <- list()
-# for (i in 1:npart) {
-#   fname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/res{i}.rds")
-#   load(fname)
-#   results[[sid]] <- res[-(1:1000), ]
-# }
-
-
 bary <- sampleBetas(results)
-
-head(bary)
-
-## rname <- paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/final_results/results_250.rds")
-## save(bary, file = rname)
-
 bary_res <- bind_rows(bary)
+
+################################################################################
+## Look at the results from the two methods ####################################
+################################################################################
 describe_posterior(as.data.frame(full_data_draws))
-tst <- describe_posterior(as.data.frame(as.mcmc(bary_res)))
+describe_posterior(as.data.frame(as.mcmc(bary_res)))
