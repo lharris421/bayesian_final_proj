@@ -1,3 +1,5 @@
+start_time <- Sys.time()
+
 #######################
 #### Libraries ########
 #######################
@@ -47,8 +49,10 @@ N <- 1e4 ## Number of draws
 ########################################################
 #### Set prior values / set up results df ##############
 ########################################################
-mu <- rep(-1.61, ncol(X) + 1)
-sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(X)))))  # need to make sure we only scale continuous vars
+mu <- c(-1.61, rep(0, ncol(X)))
+sd_temp <- sqrt(diag(var(X)))
+scale <- c(1, sd_temp[2], 1, 1, sd_temp[5])  # need to make sure we only scale continuous vars
+sigma <- diag(c(40^2, 3^2 * scale))
 
 beta_draws_mh <- matrix(0.0, N, ncol(X) + 1)
 
@@ -81,7 +85,6 @@ log_post_fun <- function(param) {
 #### Run MH ###########
 #######################
 
-tic()
 ## pb <- txtProgressBar(0, N, style=3)
 set.seed(1234)
 for(i in 2:N) {
@@ -105,12 +108,15 @@ for(i in 2:N) {
   ## setTxtProgressBar(pb, i)
   
 }
-toc()
 
 fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res_full.rds")
 save(beta_draws_mh, file = fname)
 
 ## Save the time it took to run
+end_time <- Sys.time()
+tdiff <- end_time - start_time
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/mh_full_time.rds")
+save(end_time, file = fname)
 
 #######################
 #### Results ##########

@@ -12,8 +12,8 @@
 
 ## mh
 ## SAVE TIME HERE, COMPARE TO THE FINAL COMPLETION TIME FOR TOTAL RUN TIME
-## date > /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/start_time.txt
-  qsub -q BIOSTAT -pe smp -2 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/err -o /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/out -t 1-25 /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_dnc.job
+##date > /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/start_time.txt
+## qsub -q BIOSTAT -pe smp -2 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/err -o /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/out -t 1-25 /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_dnc.job
 
 ################################################################################
 ####### LOG INTO COMPUTE NODE BEFORE PROCEEDING ################################
@@ -57,13 +57,13 @@ for (j in 1:25) {
   times[j] <- tdiff
 }
 
-mean(times) ## Minutes
+max(times) ## Minutes
 
 ######################################
 #### Put all draws in single list ####
 ######################################
 
-## TIME START HERE
+start_time <- Sys.time()
 results <- list()
 for (j in 1:25) {
   load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res{j}.rds"))
@@ -81,12 +81,16 @@ remove_burnin <- function(x, burnin) {
 
 results <- lapply(results, remove_burnin, 1000)
 ## TIME END HERE
-
+end_time <- Sys.time()
+tdiff <- end_time - start_time
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/read_time.rds")
+save(end_time, file = fname)
 
 ################################################################################
 #### Recenter Draws using simple method ########################################
 ################################################################################
 ## TIME START HERE
+start_time <- Sys.time()
 K <- 25
 subset_mean <- t(sapply(1:K, function(i) colMeans(results[[i]]))) # rows indicate subset
 global_mean <- colMeans(bind_rows(lapply(results, data.frame)))
@@ -97,7 +101,10 @@ results_recentered <- lapply(1:K,function(i) results[[i]] - matrix(recenter[i, ]
                                                                    byrow = T))
 full_data_draws <- do.call(rbind, results_recentered)
 ## TIME END HERE
-
+end_time <- Sys.time()
+tdiff <- end_time - start_time
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/simple_center_time.rds")
+save(end_time, file = fname)
 
 #####################
 #### Diagnostics ####
@@ -115,6 +122,7 @@ describe_posterior(as.data.frame(full_data_draws))
 ###### Combine using WASP approximation ########################################
 ################################################################################
 ## TIME START HERE
+start_time <- Sys.time()
 computeBarycenter <- function (meanList, covList) {
   library(matrixStats)
   library(expm)
@@ -182,6 +190,10 @@ sampleBetas <- function (betaList) {
 bary <- sampleBetas(results)
 bary_res <- bind_rows(bary)
 ## TIME END HERE
+end_time <- Sys.time()
+tdiff <- end_time - start_time
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/bary_center_time.rds")
+save(end_time, file = fname)
 
 ################################################################################
 ## Look at the results from the two methods ####################################
