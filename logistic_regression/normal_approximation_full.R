@@ -6,7 +6,6 @@ library(mvtnorm)
 library(tidyverse)
 library(magrittr)
 
-  
 ###################
 #### Load Data ####
 ###################
@@ -25,7 +24,7 @@ full_data <- mod_dat %>%
 
 y <- full_data$proc * 1
 X <- as.matrix(full_data)[, -1]
-NN <- 1e4 ## Number of draws
+N <- 1e4 ## Number of draws
 
 ########################################################
 #### Set prior values / set up results df ##############
@@ -47,49 +46,37 @@ colnames(X)[1] <- "intercept"
 #### Log Posterior ####
 #######################
 
-log_post_fun <- function(param, X, y) {
+log_post_fun <- function(param) {
   
   sum(y*X%*%param - log(1 + exp(X%*%param))) -
     drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
   
 }
 
-#########################
-#### Run adaptive MH ####
-#########################
+###########################
+#### Run Normal Approx ####
+###########################
 
 start.time <- Sys.time()
 
-#load glm full data
-load("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/glm.Rdata")
+Opt <- optim(par = rep(0,ncol(X)),
+             fn = log_post_fun, 
+             method = "BFGS",
+             control = list(fnscale= -1,
+                            maxit = 1e6),
+             hessian = T)
 
-set.seed(2022)
-beta_draws <-  MCMC(p = log_post_fun,
-                    n = NN,
-                    init = out$result_table$coef,
-                    acc.rate = 0.234,
-                    X = X, 
-                    y = y)
-rm(out)
+params <- Opt$par
+names(params) <- colnames(X)
+SigNew <-  chol2inv(chol(-Opt$hessian))
 
-beta_draws <- beta_draws$samples
+## Draw from multivariate normal
+set.seed(666) 
+beta_draws <- MASS::mvrnorm(N, mu = params, Sigma = SigNew)
 
-########################
-#### Remove burn-in ####
-########################
-
-remove_burnin <- function(x, burnin) {
-  x[-(1:burnin),]
-}
-
-beta_draws <- remove_burnin(beta_draws, 1000)
-
-#################
-#### Summary ####
-#################
-
+## Summary
 summary <- describe_posterior(as.data.frame(beta_draws))
-hpd <- hdi(as.data.frame(beta_draws))
+hpd <- hdi(beta_draws)
 
 end.time <- Sys.time()
 
@@ -100,11 +87,11 @@ results <- tibble(var = summary[,1],
                   hpd_lower = hpd[,3],
                   hdp_upper = hpd[,4])
 
-
 #####################
 #### Diagnostics ####
 #####################
 
+beta_draws <- beta_draws %>% as.mcmc()
 heidel.diag(beta_draws)
 raftery.diag(beta_draws)
 
@@ -117,7 +104,7 @@ out <- list(result_table = results,
                                raftery = raftery.diag(beta_draws)),
             comp_time = elapsed)
 save(out,
-     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_full.Rdata")
+     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_full.Rdata")
 
 temp <- out$result_table
 temp %>% mutate(across(coef:hdp_upper, ~format(round(exp(.), 3), nsmall = 3))) %>% 

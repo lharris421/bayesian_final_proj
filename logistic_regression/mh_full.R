@@ -13,33 +13,40 @@ library(tictoc)
 
 load("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/full_data_2.rds")
 
-prop.table(table(mod_dat$proc))
+##################################################
+#### Consideration for prior on intercept ########
+##################################################
+
+## prop.table(table(mod_dat$proc))
 
 score <- mod_dat %>% select_at(vars(CHF:Depression)) %>% rowSums()
 full_data <- mod_dat %>%
   dplyr::select(proc, smoker, age, sex, carrier) %>%
   mutate(score = scale(score))
 
-carriers <- full_data %>%
-  filter(carrier == TRUE)
+# carriers <- full_data %>%
+#   filter(carrier == TRUE)
+# 
+# controls <- full_data %>%
+#   filter(carrier == FALSE)
+# 
+# set.seed(1234)
+# controls <- controls[sample(1:10, nrow(controls), replace = TRUE) == 1,]
+# 
+# full_data <- bind_rows(carriers, controls)
 
-controls <- full_data %>%
-  filter(carrier == FALSE)
 
-set.seed(1234)
-controls <- controls[sample(1:10, nrow(controls), replace = TRUE) == 1,]
-
-full_data <- bind_rows(carriers, controls)
+####################################
+#### Augment data for algorithm ####
+####################################
 
 y <- full_data$proc
 X <- as.matrix(full_data)[, -1]
-N <- 1e4
+N <- 1e4 ## Number of draws
 
-#######################
-#### Log Posterior ####
-#######################
-
-## Prior values
+########################################################
+#### Set prior values / set up results df ##############
+########################################################
 mu <- rep(-1.61, ncol(X) + 1)
 sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(X)))))  # need to make sure we only scale continuous vars
 
@@ -53,10 +60,15 @@ acc_count <- 0
 sd_prop <- .25
 proposal_cov <- diag(summary(glm_fit)$coefficients[,2]^2)*sd_prop
 
-set.seed(1234)
-## pb <- txtProgressBar(0, N, style=3)
+##############################
+#### Add intercept column ####
+##############################
 
 X <- cbind(rep(1, nrow(X)), X)
+
+#######################
+#### Log Posterior ####
+#######################
 
 log_post_fun <- function(param) {
   
@@ -65,7 +77,13 @@ log_post_fun <- function(param) {
   
 }
 
+#######################
+#### Run MH ###########
+#######################
+
 tic()
+## pb <- txtProgressBar(0, N, style=3)
+set.seed(1234)
 for(i in 2:N) {
   
   beta_draws_mh[i,] <- beta_draws_mh[i - 1,]
@@ -73,7 +91,7 @@ for(i in 2:N) {
   ## Draw beta
   beta_proposal <- MASS::mvrnorm(1, mu = beta_draws_mh[i,], Sigma = proposal_cov)
   
-  acc_prob = exp(log_post_fun(beta_proposal) - log_post_fun(beta_draws_mh[i,]))
+  acc_prob <- exp(log_post_fun(beta_proposal) - log_post_fun(beta_draws_mh[i,]))
   
   if (runif(1) < acc_prob) {
     
@@ -82,14 +100,21 @@ for(i in 2:N) {
     
   }
   
-  if (i %% 100 == 0) {print(i)}
+  ## if (i %% 100 == 0) {print(i)}
   
   ## setTxtProgressBar(pb, i)
   
 }
 toc()
 
-acc_count / N
-beta
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res_full.rds")
+save(beta_draws_mh, file = fname)
+
+## Save the time it took to run
+
+#######################
+#### Results ##########
+#######################
+acc_count / N ## Acceptance rate
 describe_posterior(as.data.frame(beta_draws_mh))
 

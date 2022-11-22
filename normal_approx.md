@@ -33,7 +33,19 @@ $$
 Therefore,
 
 $$
-*f**o**r**s**u**b**s**e**t**j*
+\begin{aligned}
+\log(\pi({\boldsymbol{\theta}}\|\mathrm{\bf{y}}) ) 
+= \sum\_{i=1}^n (y_i\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}} - \log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})) - \frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu}) + C\\\\
+\end{aligned}
+$$
+
+for subset j
+
+$$
+\begin{aligned}
+\log(\pi({\boldsymbol{\theta}}\|\mathrm{y}\_j) ) 
+= \Big(\frac{n}{m_j}\Big) \sum\_{i=1}^{m_j} (y_i\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}} - \log(1+\exp\\{\mathrm{\bf{x}\_i^\top\boldsymbol{\beta}}\\})) - \frac{1}{2} (\boldsymbol{\beta}- \boldsymbol{\mu})^\top\Sigma^{-1}(\boldsymbol{\beta}- \boldsymbol{\mu}) + C\\\\
+\end{aligned}
 $$
 
 **Solve for MLE**

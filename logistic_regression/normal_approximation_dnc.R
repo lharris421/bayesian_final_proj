@@ -7,6 +7,7 @@ library(tidyverse)
 library(magrittr)
 library(glue)
 
+
 #######################
 #### Log Posterior ####
 #######################
@@ -14,6 +15,24 @@ library(glue)
 log_post_fun <- function(param, X, y, ratio, sigma, mu) {
   (ratio)*sum(y*X%*%param - log(1 + exp(X%*%param))) -
     drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
+}
+
+########################
+#### Optim function ####
+########################
+
+optim_fun <- function(init, X, y, ratio, sigma, mu) {
+  optim(par = init,
+        fn = log_post_fun,
+        method = "BFGS",
+        control = list(fnscale= -1,
+                       maxit = 1e6),
+        hessian = T,
+        sigma = sigma, 
+        mu = mu,
+        X = X,
+        y = y,
+        ratio = ratio)
 }
 
 #######################
@@ -34,22 +53,21 @@ inner_draws <- function(j, NN = 1e4) {
   x0 <- cbind(rep(1, nrow(x0)), x0)
   colnames(x0)[1] <- "intercept"
   
-  temp <- glm(y0 ~x0-1, family = "binomial")
+  Opt <- optim_fun(init = rep(0, ncol(x0)),
+                   X = x0, 
+                   y = y0,
+                   ratio = nrep0,
+                   sigma = sigma,
+                   mu = mu)
   
-  set.seed(2022)
-  full_data_draws <-  MCMC(p = log_post_fun,
-                           n = NN,
-                           init = coef(temp),
-                           acc.rate = 0.234,
-                           X = x0, 
-                           y = y0, 
-                           ratio = nrep0,
-                           mu = mu,
-                           sigma = sigma)
+  params <- Opt$par
+  names(params) <- colnames(x0)
+  SigNew <- chol2inv(chol(-Opt$hessian))
   
-  full_data_draws$samples
+  ## Draw from multivariate normal
+  set.seed(666)
+  MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
 }
-
 
 #########################
 #### Run in parallel ####
@@ -60,12 +78,12 @@ K <- 25
 cl <- makeCluster(min(detectCores(), 25))
 clusterExport(
   cl,
-  c("inner_draws", "log_post_fun")
+  c("inner_draws", "log_post_fun",
+    "optim_fun")
 )
 clusterEvalQ(cl, {
   library(MASS)
   library(glue)
-  library(adaptMCMC)
 })
 
 results <-  parLapply(
@@ -74,16 +92,6 @@ results <-  parLapply(
   function(x) inner_draws(j = x, NN = 1e4)
 )
 stopCluster(cl)
-
-########################
-#### Remove burn-in ####
-########################
-
-remove_burnin <- function(x, burnin) {
-  x[-(1:burnin),]
-}
-
-results <- lapply(results, remove_burnin, 1000)
 
 ########################
 #### Recenter Draws ####
@@ -130,7 +138,7 @@ out <- list(result_table = results,
                                raftery = raftery.diag(full_data_draws)),
             comp_time = elapsed)
 save(out,
-     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_dnc.Rdata")
+     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_dnc_WASP.Rdata")
 
 temp <- out$result_table
 temp %>% mutate(across(coef:hdp_upper, ~format(round(exp(.), 3), nsmall = 3))) %>% 
