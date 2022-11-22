@@ -2,12 +2,9 @@
 #$ -N logistic_regression
 #$ -q UI
 #$ -pe smp 2
-#$ -wd /Shared/Statepi_Marketscan/aa_lh_bayes/logistic_regression/
 #$ -m a
 #$ -M loharris@uiowa.edu
 #$ -V
-#$ -e /Shared/Statepi_Marketscan/aa_lh_bayes/logistic_regression/err
-#$ -o /Shared/Statepi_Marketscan/aa_lh_bayes/logistic_regression/out
 #$ -j y
 
 module load stack/2020.1
