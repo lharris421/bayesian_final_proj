@@ -17,9 +17,7 @@ load("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/full_data_
 #### Consideration for prior on intercept ########
 ##################################################
 
-prop.table(table(mod_dat$proc))
-
-
+## prop.table(table(mod_dat$proc))
 
 score <- mod_dat %>% select_at(vars(CHF:Depression)) %>% rowSums()
 full_data <- mod_dat %>%
@@ -93,7 +91,7 @@ for(i in 2:N) {
   ## Draw beta
   beta_proposal <- MASS::mvrnorm(1, mu = beta_draws_mh[i,], Sigma = proposal_cov)
   
-  acc_prob = exp(log_post_fun(beta_proposal) - log_post_fun(beta_draws_mh[i,]))
+  acc_prob <- exp(log_post_fun(beta_proposal) - log_post_fun(beta_draws_mh[i,]))
   
   if (runif(1) < acc_prob) {
     
@@ -102,12 +100,17 @@ for(i in 2:N) {
     
   }
   
-  if (i %% 100 == 0) {print(i)}
+  ## if (i %% 100 == 0) {print(i)}
   
   ## setTxtProgressBar(pb, i)
   
 }
 toc()
+
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res_full.rds")
+save(beta_draws_mh, file = fname)
+
+## Save the time it took to run
 
 #######################
 #### Results ##########

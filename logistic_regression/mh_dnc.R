@@ -1,3 +1,8 @@
+######################
+#### Start timing ####
+######################
+## start_time <- Sys.time()
+
 ###################
 #### Libraries ####
 ###################
@@ -13,8 +18,6 @@ if (length(args) == 0){
 } else {
   j <- args[[1]]
 }
-
-start_time <- Sys.time()
 
 ######################################
 #### Load the subset of the data #####
@@ -77,7 +80,7 @@ inner_draws <- function(X, y, N, NN = 1e4) {
       
     }
     
-    if (i %% 100 == 0) {print(i)}
+    ## if (i %% 100 == 0) {print(i)}
     
   }
   
@@ -104,6 +107,8 @@ fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logist
 save(acc_counts, file = fname)
 
 end_time <- Sys.time()
-tdiff <- end_time - start_time
+## tdiff <- end_time - start_time
+
+## Only save the end time
 fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/time{j}.rds")
-save(tdiff, file = fname)
+save(end_time, file = fname)

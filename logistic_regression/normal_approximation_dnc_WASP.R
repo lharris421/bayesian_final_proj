@@ -130,7 +130,7 @@ inner_draws <- function(j, NN = 1e4) {
   SigNew <- chol2inv(chol(-Opt$hessian))
   
   ## Draw from multivariate normal
-  set.seed(666)
+  set.seed(666) ## I think you should move this outside of the function
   MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
 }
 
