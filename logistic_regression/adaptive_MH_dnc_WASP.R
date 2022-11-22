@@ -6,6 +6,70 @@ library(mvtnorm)
 library(tidyverse)
 library(magrittr)
 library(glue)
+library(matrixStats)
+library(expm)
+library(MASS)
+
+########################
+#### WASP functions ####
+########################
+
+computeBarycenter <- function (meanList, covList) {
+  
+  ncomp <- length(covList)
+  ndim <- nrow(covList[[1]])
+  wts <- rep(1, ncomp) / ncomp
+  
+  baryMean <- rowMeans(do.call(cbind, meanList))
+  baryCov <- diag(1.0, ndim)
+  barySd <- sqrtm(baryCov)
+  err <- baryCov
+  cnt <- 1
+  while ((norm(err, type = "F") > 1e-6) & cnt < 500) {
+    if (cnt %% 10 == 0)  cat("iter: ", cnt, "\n")
+    
+    ssj <- matrix(0.0, nrow = ndim, ncol = ndim)
+    for (ii in 1:ncomp) {
+      ssj <- ssj + sqrtm(baryCov %*% covList[[ii]])
+    }
+    
+    tmp <- solve(sqrtm(baryCov))
+    baryCovNew <- tmp %*% tcrossprod(ssj / ncomp) %*% tmp
+    err <- baryCov - baryCovNew
+    baryCov <- baryCovNew
+    barySd <- sqrtm(baryCov)
+    cnt <- cnt + 1
+  }
+  
+  list(mean = baryMean, cov = baryCov, sqrt = barySd, iter = cnt)
+}
+
+sampleBetas <- function (betaList) {
+  
+  npart <- length(betaList)
+  meanBetas <- list()
+  covBetas <- list()
+  
+  meanBetas <- lapply(betaList, function(x) colMeans(x))
+  covBetas <- lapply(betaList, function(x) cov(x))
+  
+  resBary <- computeBarycenter(meanBetas, covBetas)
+  muBetas <- resBary$mean
+  sigBetas <- resBary$cov
+  sqrtSigBetas <- resBary$sqrt
+  
+  baryList <- list()
+  for (ii in 1:npart) {
+    tmp <- as(chol2inv(chol(covBetas[[ii]])), "symmetricMatrix")
+    tmp1 <- matrix(meanBetas[[ii]], nrow = nrow(betaList[[ii]]), ncol = ncol(betaList[[ii]]), byrow = TRUE)
+    centScaledSamps <- sqrtm(tmp) %*% (t(betaList[[ii]] - tmp1))
+    baryList[[ii]] <- t(muBetas + sqrtSigBetas %*% centScaledSamps)
+  }
+  
+  list(
+    wasp = do.call(rbind, baryList)
+  )
+}
 
 #######################
 #### Log Posterior ####
@@ -50,7 +114,6 @@ inner_draws <- function(j, NN = 1e4) {
   full_data_draws$samples
 }
 
-
 #########################
 #### Run in parallel ####
 #########################
@@ -85,21 +148,14 @@ remove_burnin <- function(x, burnin) {
 
 results <- lapply(results, remove_burnin, 1000)
 
-########################
-#### Recenter Draws ####
-########################
+##########################################
+#### Combine using WASP approximation ####
+##########################################
 
-subset_mean <- t(sapply(1:K, function(i) colMeans(results[[i]]))) # rows indicate subset
-## This step was slightly off... it assumed perfect balance
-## global_mean <- colMeans(subset_mean)
-global_mean <- colMeans(bind_rows(lapply(results, data.frame)))
-recenter <- t(sapply(1:K, function(i) subset_mean[i, ] - global_mean)) # rows indicate subset
-## Should this be minus?
-results_recentered <- lapply(1:K,function(i) results[[i]] - matrix(recenter[i, ],
-                                                                   nrow = nrow(results[[i]]),
-                                                                   ncol = ncol(results[[i]]),
-                                                                   byrow = T))
-full_data_draws <- do.call(rbind, results_recentered)
+bary <- sampleBetas(results)
+bary_res <- bind_rows(bary)
+full_data_draws <- bary_res$wasp
+colnames(full_data_draws) <- colnames(results[[1]])
 
 ## Summary
 summary <- describe_posterior(as.data.frame(full_data_draws))
@@ -130,7 +186,7 @@ out <- list(result_table = results,
                                raftery = raftery.diag(full_data_draws)),
             comp_time = elapsed)
 save(out,
-     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_dnc.Rdata")
+     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_dnc_WASP.Rdata")
 
 temp <- out$result_table
 temp %>% mutate(across(coef:hdp_upper, ~format(round(exp(.), 3), nsmall = 3))) %>% 

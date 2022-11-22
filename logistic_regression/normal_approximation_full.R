@@ -6,7 +6,6 @@ library(mvtnorm)
 library(tidyverse)
 library(magrittr)
 
-  
 ###################
 #### Load Data ####
 ###################
@@ -25,7 +24,7 @@ full_data <- mod_dat %>%
 
 y <- full_data$proc * 1
 X <- as.matrix(full_data)[, -1]
-NN <- 1e4 ## Number of draws
+N <- 1e4 ## Number of draws
 
 ########################################################
 #### Set prior values / set up results df ##############
@@ -54,21 +53,26 @@ log_post_fun <- function(param) {
   
 }
 
-#########################
-#### Run adaptive MH ####
-#########################
+###########################
+#### Run Normal Approx ####
+###########################
 
 start.time <- Sys.time()
 
-#load glm full data
-load( "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/glm.Rdata")
+Opt <- optim(par = rep(0,ncol(X)),
+             fn = log_post_fun, 
+             method = "BFGS",
+             control = list(fnscale= -1,
+                            maxit = 1e6),
+             hessian = T)
 
-set.seed(2022)
-beta_draws <-  MCMC(p = log_post_fun,
-                    n = NN,
-                    init = out$result_table$coef,
-                    acc.rate = 0.234)
-rm(out)
+params <- Opt$par
+names(params) <- colnames(X)
+SigNew <-  chol2inv(chol(-Opt$hessian))
+
+## Draw from multivariate normal
+set.seed(666) 
+beta_draws <- MASS::mvrnorm(N, mu = params, Sigma = SigNew)
 
 ## Summary
 summary <- describe_posterior(as.data.frame(beta_draws))
@@ -100,7 +104,7 @@ out <- list(result_table = results,
                                raftery = raftery.diag(beta_draws)),
             comp_time = elapsed)
 save(out,
-     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_full.Rdata")
+     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_full.Rdata")
 
 temp <- out$result_table
 temp %>% mutate(across(coef:hdp_upper, ~format(round(exp(.), 3), nsmall = 3))) %>% 
