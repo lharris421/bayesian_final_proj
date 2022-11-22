@@ -48,8 +48,10 @@ log_post_fun <- function(param, X, y, N, m, sigma, mu) {
 inner_draws <- function(X, y, N, NN = 1e4) {
   
   # priors
-  sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(X)))))
-  mu <- rep(0, ncol(X) + 1)
+  mu <- c(-1.61, rep(0, ncol(X)))
+  sd_temp <- sqrt(diag(var(X)))
+  scale <- c(1, sd_temp[2], 1, 1, sd_temp[5])  # need to make sure we only scale continuous vars
+  sigma <- diag(c(40^2, 3^2 * scale)) 
   
   beta_draws_mh <- matrix(0.0, NN, (ncol(X) + 1))
   
