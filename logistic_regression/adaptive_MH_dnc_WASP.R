@@ -100,7 +100,6 @@ inner_draws <- function(j, NN = 1e4) {
   
   temp <- glm(y0 ~x0-1, family = "binomial")
   
-  set.seed(2022)
   full_data_draws <-  MCMC(p = log_post_fun,
                            n = NN,
                            init = coef(temp),
@@ -117,7 +116,7 @@ inner_draws <- function(j, NN = 1e4) {
 #########################
 #### Run in parallel ####
 #########################
-
+set.seed(666) 
 start.time <- Sys.time()
 K <- 25
 cl <- makeCluster(min(detectCores(), 25))
@@ -166,6 +165,8 @@ elapsed <- end.time-start.time
 
 results <- tibble(var = summary[,1],
                   coef = summary[,2],
+                  central_lower = summary[, 4],
+                  central_upper= summary[, 5],
                   hpd_lower = hpd[,3],
                   hdp_upper = hpd[,4])
 
@@ -177,19 +178,47 @@ full_data_draws <- full_data_draws %>% as.mcmc()
 heidel.diag(full_data_draws)
 raftery.diag(full_data_draws)
 
+######################
+#### Bayes Factor ####
+######################
+
+load("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/full_data_2.rds")
+
+score <- mod_dat %>% select_at(vars(CHF:Depression)) %>% rowSums()
+full_data <- mod_dat %>%
+  dplyr::select(proc, smoker, age, sex, carrier) %>%
+  mutate(score = scale(score))
+
+y <- full_data$proc * 1
+X <- as.matrix(full_data)[, -1]
+
+mu <- c(-1.61, rep(0, ncol(X)))
+sd_temp <- sqrt(diag(var(X)))
+scale <- c(1, sd_temp[2], 1, 1, sd_temp[5])  # need to make sure we only scale continuous vars
+sigma <- diag(c(40^2, 3^2 * scale)) 
+
+X <- cbind(rep(1, nrow(X)), X)
+colnames(X)[1] <- "intercept"
+
+set.seed(666)
+BF <- bayesfactor_parameters(posterior = as.data.frame(full_data_draws[,5]), # Need posterior draws
+                             prior = data.frame(rnorm(nrow(full_data_draws), mu[5], sqrt(sigma[5,5]))), # also need prior draws
+                             null = 0) # did not converge
 ##############
 #### Save ####
 ##############
 
 out <- list(result_table = results,
+            BF = NA, #as.numeric(BF),
             diagnostics = list(heidel = heidel.diag(full_data_draws),
                                raftery = raftery.diag(full_data_draws)),
             comp_time = elapsed)
-save(out,
-     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_dnc_WASP.Rdata")
+save(out, full_data_draws,
+     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_dnc_WASP.Rdata")
 
 temp <- out$result_table
-temp %>% mutate(across(coef:hdp_upper, ~format(round(exp(.), 3), nsmall = 3))) %>% 
-  mutate(nice = paste0(coef, " (", hpd_lower, ", ", hdp_upper, ")"))
+temp %>% mutate(across(coef:central_upper, ~format(round(exp(.), 3), nsmall = 3))) %>% 
+  dplyr::select(var:central_upper) %>% 
+  mutate(nice = paste0(coef, " (", central_lower, ", ", central_upper, ")"))
 
 
