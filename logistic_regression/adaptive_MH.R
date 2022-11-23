@@ -97,9 +97,10 @@ elapsed <- end.time-start.time
 
 results <- tibble(var = summary[,1],
                   coef = summary[,2],
+                  central_lower = summary[, 4],
+                  central_upper= summary[, 5],
                   hpd_lower = hpd[,3],
                   hdp_upper = hpd[,4])
-
 
 #####################
 #### Diagnostics ####
