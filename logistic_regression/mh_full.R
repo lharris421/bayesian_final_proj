@@ -5,7 +5,7 @@ print(start_time)
 #######################
 #### Libraries ########
 #######################
-rm(list = ls())
+## rm(list = ls())
 library(tidyverse)
 library(magrittr)
 library(tictoc)
