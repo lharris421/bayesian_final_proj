@@ -1,5 +1,6 @@
 ## Start the timer!!!
 start_time <- Sys.time()
+print(start_time)
 
 #######################
 #### Libraries ########
