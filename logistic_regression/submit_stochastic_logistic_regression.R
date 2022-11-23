@@ -12,7 +12,7 @@
 
 ## mh
 ## SAVE TIME HERE, COMPARE TO THE FINAL COMPLETION TIME FOR TOTAL RUN TIME
-##date > /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/start_time.txt
+## date > /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/start_time.txt
 ## qsub -q BIOSTAT -pe smp -2 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/err -o /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/out -t 1-25 /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_dnc.job
 
 ################################################################################
@@ -22,7 +22,6 @@
 ################################################################################
 #### Combine the results from MH Runs  #########################################
 ################################################################################
-all_counts <- numeric(25)
 
 ########################
 #### Libraries #########
@@ -54,11 +53,25 @@ mean(all_counts) / 10000
 times <- numeric(25)
 for (j in 1:25) {
   load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/time{j}.rds"))
-  times[j] <- tdiff
+  times[j] <- end_time
 }
 
-max(times) ## Minutes
+max(times) ## time in seconds
+as.Date((max(times) / (3600*24)), origin = "1970-01-01")
 
+library(lubridate)
+library(stringr)
+with_tz(as_datetime(max(times)), "America/Chicago")
+  
+date_string <- read_lines("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/start_time.txt")
+split_date <- str_split(date_string, " ")[[1]]
+month_num <- which(month.abb == split_date[2])
+as_datetime(paste0(split_date[6], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
+
+with_tz(as_datetime(max(times)), "America/Chicago") - as_datetime(paste0(split_date[6], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
+
+## "%a %b %d %h:%s:%m %Z %Y"
+as.POSIXct(read_lines("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/start_time.txt"), format = "%a %b %d %h:%s:%m")
 ######################################
 #### Put all draws in single list ####
 ######################################
@@ -116,8 +129,17 @@ raftery.diag(full_data_draws)
 #################
 #### Summary ####
 #################
-describe_posterior(as.data.frame(full_data_draws))
+tmp <- describe_posterior(as.data.frame(full_data_draws))
+tmp$Median
+names(tmp)
 
+head(full_data_draws)
+
+tmp_carrier <- exp(full_data_draws[,5])
+res_carrier <- describe_posterior(as.data.frame(tmp_carrier))
+res_carrier$Median
+res_carrier$CI_low
+res_carrier$CI_high
 ################################################################################
 ###### Combine using WASP approximation ########################################
 ################################################################################
@@ -200,3 +222,9 @@ save(end_time, file = fname)
 ################################################################################
 describe_posterior(as.data.frame(full_data_draws))
 describe_posterior(as.data.frame(as.mcmc(bary_res)))
+
+tmp_carrier <- exp(as.data.frame(as.mcmc(bary_res))[,5])
+res_carrier <- describe_posterior(as.data.frame(tmp_carrier))
+res_carrier$Median
+res_carrier$CI_low
+res_carrier$CI_high
