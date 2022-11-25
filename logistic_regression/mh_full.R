@@ -1,6 +1,5 @@
 ## Start the timer!!!
 start_time <- Sys.time()
-print(start_time)
 
 #######################
 #### Libraries ########
@@ -10,6 +9,7 @@ library(tidyverse)
 library(magrittr)
 library(tictoc)
 
+print(start_time)
 
 #######################
 #### Load Data ########
