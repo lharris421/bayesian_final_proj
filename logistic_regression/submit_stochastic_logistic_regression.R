@@ -97,7 +97,7 @@ results <- lapply(results, remove_burnin, 1000)
 end_time <- Sys.time()
 tdiff <- end_time - start_time
 fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/read_time.rds")
-save(end_time, file = fname)
+save(tdiff, file = fname)
 
 ################################################################################
 #### Recenter Draws using simple method ########################################
@@ -117,7 +117,7 @@ full_data_draws <- do.call(rbind, results_recentered)
 end_time <- Sys.time()
 tdiff <- end_time - start_time
 fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/simple_center_time.rds")
-save(end_time, file = fname)
+save(tdiff, file = fname)
 
 #####################
 #### Diagnostics ####
@@ -215,7 +215,7 @@ bary_res <- bind_rows(bary)
 end_time <- Sys.time()
 tdiff <- end_time - start_time
 fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/bary_center_time.rds")
-save(end_time, file = fname)
+save(tdiff, file = fname)
 
 ################################################################################
 ## Look at the results from the two methods ####################################
@@ -228,3 +228,7 @@ res_carrier <- describe_posterior(as.data.frame(tmp_carrier))
 res_carrier$Median
 res_carrier$CI_low
 res_carrier$CI_high
+
+## Times
+load("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/bary_center_time.rds")
+

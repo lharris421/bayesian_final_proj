@@ -1,3 +1,5 @@
+## source("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_full.R")
+
 ## Start the timer!!!
 start_time <- Sys.time()
 
@@ -7,6 +9,9 @@ start_time <- Sys.time()
 ## rm(list = ls())
 library(tidyverse)
 library(magrittr)
+library(glue)
+library(bayestestR)
+library(coda)
 
 print(start_time)
 
@@ -123,5 +128,9 @@ save(tdiff, file = fname)
 #### Results ##########
 #######################
 acc_count / N ## Acceptance rate
-describe_posterior(as.data.frame(beta_draws_mh))
 
+tmp_carrier <- exp(as.data.frame(beta_draws_mh)[,5])
+res_carrier <- describe_posterior(as.data.frame(tmp_carrier))
+res_carrier$Median
+res_carrier$CI_low
+res_carrier$CI_high
