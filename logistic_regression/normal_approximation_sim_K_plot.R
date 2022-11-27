@@ -25,24 +25,29 @@ y <- rbinom(N, 1, pr)
 #### Log Posterior ####
 #######################
 
-log_post_fun <- function(param, X, y, N, m, sigma, mu) {
-  (N/m)*sum(y*X%*%param - log(1 + exp(X%*%param))) -
-    drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
+log_post_fun <- function(param, X, y, N, m
+                         #, sigma, mu
+                         ) {
+  (N/m)*sum(y*X%*%param - log(1 + exp(X%*%param)))
+  # -
+  #   drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu)) # flat prior
 }
 
 ########################
 #### Optim function ####
 ########################
 
-optim_fun <- function(init, X, y, N, m, sigma, mu) {
+optim_fun <- function(init, X, y, N, m
+                      #, sigma, mu
+                      ) {
   optim(par = init,
         fn = log_post_fun,
         method = "BFGS",
         control = list(fnscale= -1,
                        maxit = 1e6),
         hessian = T,
-        sigma = sigma, 
-        mu = mu,
+        # sigma = sigma, 
+        # mu = mu,
         X = X,
         y = y,
         N = N,
@@ -57,17 +62,19 @@ inner_draws <- function(i, X, y, N, NN = 1e4) {
   fold_data_y <- y[fold_idx == i]
   fold_data_X <- X[fold_idx == i,]
   
-  #priors
-  sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(fold_data_X[,-1]))))) # need to make sure we only scale continuous vars
-  mu <- rep(0,4)
+  #priors - make it flat prir
+  # sigma <- diag(c(40^2, 3^2 * sqrt(diag(var(fold_data_X[,-1]))))) # need to make sure we only scale continuous vars
+  # mu <- rep(0,4)
   
   Opt <- optim_fun(init = rep(0, ncol(fold_data_X)),
                    X = fold_data_X, 
                    y = fold_data_y,
                    m = sum(fold_idx == i),
-                   N = N,
-                   sigma = sigma,
-                   mu = mu)
+                   N = N
+                   # ,
+                   # sigma = sigma,
+                   # mu = mu
+                   )
   
   params <- Opt$par
   SigNew <- chol2inv(chol(-Opt$hessian))
@@ -82,6 +89,7 @@ inner_draws <- function(i, X, y, N, NN = 1e4) {
 ########################
 #### Partition Data ####
 ########################
+
 out <- matrix(0, nrow = 1, ncol = 5,
               dimnames = list(rep("", 1),
                               c("K", "m_j",
@@ -145,8 +153,11 @@ save(out,
 ##############
 #### Plot ####
 ##############
+
 load("/Volumes/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_sim_plot_data.Rdata")
+
 N <- 1e5
+
 as_tibble(out) %>% 
   select(-m_j) %>% 
   left_join(as_tibble(out) %>% select(K, M_J=m_j) %>% 
