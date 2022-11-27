@@ -146,18 +146,20 @@ save(out,
 #### Plot ####
 ##############
 load("/Volumes/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_sim_plot_data.Rdata")
-
+N <- 1e5
 as_tibble(out) %>% 
   select(-m_j) %>% 
-  left_join(as_tibble(out) %>% select(K, m_j) %>% 
-              slice(c(1, seq(0, nrow(out), by = 5)))) %>% 
+  left_join(as_tibble(out) %>% select(K, M_J=m_j) %>% 
+              slice(c(1, seq(0, nrow(out), by = 5))) %>% 
+              mutate(m_j = paste0(M_J, " (", trimws(format(round(M_J/N *100, 2), nsmall =2)), "%)")),
+            by = "K") %>% 
   mutate(m_j = ifelse(is.na(m_j), "", m_j)) %>% 
   mutate(K = as.factor(K)) %>% 
   ggplot(aes(K, coef, label = m_j))+
   geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), colour="black", width=.1)+
   geom_point(size=3, shape=21, fill="blue")+
   geom_hline(yintercept = 3.8, col = "red") +
-  geom_text(aes(y = upper_ci), angle = 90, nudge_y = +0.01,
+  geom_text(aes(y = upper_ci), angle = 90, nudge_y = +0.025,
             fontface = "bold", size = 3.5)+
   scale_x_discrete(labels = c(1, seq(0, nrow(out), by = 5)),
                    breaks = c(1, seq(0, nrow(out), by = 5)))+
@@ -165,6 +167,7 @@ as_tibble(out) %>%
            fontface = "bold", size = 3.5)+ 
   expand_limits(x = -5, y = 3.7)+
   expand_limits(x = 205, y = 3.7)+
+  ylim(c(3.7,4.05))+
   ylab("Estimate")
 
 
