@@ -6,7 +6,43 @@ library(mvtnorm)
 library(tidyverse)
 library(magrittr)
 library(glue)
+library(matrixStats)
+library(expm)
+library(MASS)
 
+########################
+#### WASP functions ####
+########################
+
+computeBarycenter <- function (meanList, covList) {
+  
+  ncomp <- length(covList)
+  ndim <- nrow(covList[[1]])
+  wts <- rep(1, ncomp) / ncomp
+  
+  baryMean <- rowMeans(do.call(cbind, meanList))
+  baryCov <- diag(1.0, ndim)
+  barySd <- sqrtm(baryCov)
+  err <- baryCov
+  cnt <- 1
+  while ((norm(err, type = "F") > 1e-6) & cnt < 500) {
+    if (cnt %% 10 == 0)  cat("iter: ", cnt, "\n")
+    
+    ssj <- matrix(0.0, nrow = ndim, ncol = ndim)
+    for (ii in 1:ncomp) {
+      ssj <- ssj + sqrtm(baryCov %*% covList[[ii]])
+    }
+    
+    tmp <- solve(sqrtm(baryCov))
+    baryCovNew <- tmp %*% tcrossprod(ssj / ncomp) %*% tmp
+    err <- baryCov - baryCovNew
+    baryCov <- baryCovNew
+    barySd <- sqrtm(baryCov)
+    cnt <- cnt + 1
+  }
+  
+  list(mean = baryMean, cov = baryCov, sqrt = barySd, iter = cnt)
+}
 
 #######################
 #### Log Posterior ####
@@ -92,14 +128,16 @@ results <-  parLapply(
 )
 stopCluster(cl)
 
-########################
-#### Recenter Draws ####
-########################
+##########################################
+#### Combine using WASP approximation ####
+##########################################
 
-global_mean <- colMeans(t(sapply(1:K, function(i) rbind(results[[i]]$params))))
-Sigs <- lapply(1:K, function(i) results[[i]]$Sig)
-SigNew <- Reduce('+', Sigs)
-SigNew <- SigNew/K
+mean_list <- lapply(1:K, function(i) results[[i]]$params)
+Sigs_list <- lapply(1:K, function(i) results[[i]]$Sig)
+
+bary <- computeBarycenter(mean_list, Sigs_list)
+global_mean <- bary$mean
+SigNew <- bary$cov
 
 end.time <- Sys.time()
 elapsed <- end.time-start.time
@@ -114,7 +152,7 @@ for (i in 1:length(global_mean)){
                            upper_CI = tmp[2]))
 }
 
-results <- tibble(parameter = names(results[[1]]$params)) %>% 
+results <- tibble(parameter = names(global_mean)) %>% 
   bind_cols(res)
 
 ##############
@@ -125,10 +163,11 @@ out <- list(result_table = results,
             comp_time = elapsed)
 
 save(out,
-     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_dnc_V2.Rdata")
+     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_dnc_WASP_V2.Rdata")
 
 temp <- out$result_table
 temp %>% mutate(across(param:upper_CI, ~format(round(exp(.), 3), nsmall = 3))) %>% 
   dplyr::select(parameter:upper_CI) %>% 
   mutate(nice = paste0(param, " (", lower_CI, ", ", upper_CI, ")"))
+
 

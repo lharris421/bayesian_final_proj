@@ -112,6 +112,7 @@ stopCluster(cl)
 global_mean <- colMeans(t(sapply(1:K, function(i) rbind(results[[i]]$params))))
 Sigs <- lapply(1:K, function(i) results[[i]]$Sig)
 SigNew <- Reduce('+', Sigs)
+SigNew <- SigNew/K
 
 #################
 #### Summary ####
