@@ -15,7 +15,7 @@ library(stringr)
 ######################################
 args = commandArgs(trailingOnly=TRUE)
 str(args)
-args <- as.numeric(str_split(str_remove(args, "^--args "), " "))
+args <- as.numeric(unlist(str_split(str_remove(args, "^--args "), " ")))
 print(args)
 print(j)
 print(seed)
