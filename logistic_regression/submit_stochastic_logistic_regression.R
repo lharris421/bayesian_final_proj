@@ -140,6 +140,33 @@ res_carrier <- describe_posterior(as.data.frame(tmp_carrier))
 res_carrier$Median
 res_carrier$CI_low
 res_carrier$CI_high
+
+######################
+#### Bayes Factor ####
+######################
+load("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/full_data_2.rds")
+
+score <- mod_dat %>% select_at(vars(CHF:Depression)) %>% rowSums()
+full_data <- mod_dat %>%
+  dplyr::select(proc, smoker, age, sex, carrier) %>%
+  mutate(score = scale(score))
+
+y <- full_data$proc * 1
+X <- as.matrix(full_data)[, -1]
+
+mu <- c(-1.61, rep(0, ncol(X)))
+sd_temp <- sqrt(diag(var(X)))
+scale <- c(1, sd_temp[2], 1, 1, sd_temp[5])  # need to make sure we only scale continuous vars
+sigma <- diag(c(40^2, 3^2 * scale)) 
+
+X <- cbind(rep(1, nrow(X)), X)
+colnames(X)[1] <- "intercept"
+
+set.seed(666)
+BF <- bayesfactor_parameters(posterior = as.data.frame(full_data_draws[,5]), # Need posterior draws
+                             prior = data.frame(rnorm(nrow(full_data_draws), mu[5], sqrt(sigma[5,5]))), # also need prior draws
+                             null = 0)
+
 ################################################################################
 ###### Combine using WASP approximation ########################################
 ################################################################################
@@ -216,6 +243,13 @@ end_time <- Sys.time()
 tdiff <- end_time - start_time
 fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/bary_center_time.rds")
 save(tdiff, file = fname)
+
+
+set.seed(666)
+bary_res %<>% as.mcmc()
+BF <- bayesfactor_parameters(posterior = as.data.frame(bary_res[,5]), # Need posterior draws
+                             prior = data.frame(rnorm(nrow(bary_res), mu[5], sqrt(sigma[5,5]))), # also need prior draws
+                             null = 0)
 
 ################################################################################
 ## Look at the results from the two methods ####################################

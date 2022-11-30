@@ -13,6 +13,13 @@ full_data <- mod_dat %>%
   dplyr::select(proc, smoker, age, sex, carrier) %>%
   mutate(score = scale(score))
 
+nrow(full_data)
+table(full_data$carrier)
+table(full_data$proc)
+table(full_data$sex)
+table(full_data$smoker)
+mean(full_data$age)
+
 # carriers <- full_data %>%
 #   filter(carrier == TRUE)
 # 

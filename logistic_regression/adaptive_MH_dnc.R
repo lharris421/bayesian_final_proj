@@ -35,7 +35,6 @@ inner_draws <- function(j, NN = 1e4) {
   colnames(x0)[1] <- "intercept"
   
   temp <- glm(y0 ~x0-1, family = "binomial")
-  
 
   full_data_draws <-  MCMC(p = log_post_fun,
                            n = NN,
