@@ -3,6 +3,22 @@
 ## Start the timer!!!
 start_time <- Sys.time()
 
+######################################
+#### Get info from qsub ##############
+######################################
+args = commandArgs(trailingOnly=TRUE)
+str(args)
+args <- as.numeric(unlist(str_split(str_remove(args, "^--args "), " ")))
+print(args)
+if (length(args) == 0){
+  j <- 1
+} else {
+  j <- args[1]
+  seed <- args[2]
+}
+print(j)
+print(seed)
+
 #######################
 #### Libraries ########
 #######################

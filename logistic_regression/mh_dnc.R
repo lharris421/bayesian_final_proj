@@ -101,7 +101,7 @@ inner_draws <- function(X, y, N, NN = 1e4) {
 ######################
 #### Run MH ##########
 ######################
-set.seed(seed)
+set.seed(as.numeric(paste0(seed, j)))
 res_full <- inner_draws(x0, y0, N)
 
 ######################
