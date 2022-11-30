@@ -8,6 +8,7 @@
 ###################
 library(glue)
 library(dplyr)
+library(stringr)
 
 ######################################
 #### Get index from qsub #############
@@ -17,9 +18,13 @@ str(args)
 if (length(args) == 0){
   j <- 1
 } else {
-  j <- args[[1]][1]
-  seed <- args[[1]][2]
+  args <- as.numeric(str_split(str_remove(args, "^--args\s"), " "))
+  j <- args[1]
+  seed <- args[2]
 }
+
+print(j)
+print(seed)
 
 ######################################
 #### Load the subset of the data #####
