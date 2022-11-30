@@ -13,6 +13,8 @@ library(dplyr)
 #### Get index from qsub #############
 ######################################
 args = commandArgs(trailingOnly=TRUE)
+print(args)
+
 if (length(args) == 0){
   j <- 1
 } else {
