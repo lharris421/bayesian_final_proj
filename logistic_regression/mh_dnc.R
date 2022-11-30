@@ -15,16 +15,17 @@ library(stringr)
 ######################################
 args = commandArgs(trailingOnly=TRUE)
 str(args)
+args <- as.numeric(str_split(str_remove(args, "^--args\s"), " "))
+print(args)
+print(j)
+print(seed)
+str(args)
 if (length(args) == 0){
   j <- 1
 } else {
-  args <- as.numeric(str_split(str_remove(args, "^--args\s"), " "))
   j <- args[1]
   seed <- args[2]
 }
-
-print(j)
-print(seed)
 
 ######################################
 #### Load the subset of the data #####
