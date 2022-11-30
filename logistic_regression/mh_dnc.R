@@ -17,6 +17,7 @@ if (length(args) == 0){
   j <- 1
 } else {
   j <- args[[1]]
+  seed <- args[[2]]
 }
 
 ######################################
@@ -94,6 +95,7 @@ inner_draws <- function(X, y, N, NN = 1e4) {
 ######################
 #### Run MH ##########
 ######################
+set.seed(seed)
 res_full <- inner_draws(x0, y0, N)
 
 ######################
@@ -102,15 +104,15 @@ res_full <- inner_draws(x0, y0, N)
 res <- res_full[[1]]
 acc_counts <- res_full[[2]]
 
-fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res{j}.rds")
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res{j}_{seed}.rds")
 save(res, file = fname)
 
-fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/acc_counts/mh_large/acc_counts{j}.rds")
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/acc_counts/mh_large/acc_counts{j}_{seed}.rds")
 save(acc_counts, file = fname)
 
 end_time <- Sys.time()
 ## tdiff <- end_time - start_time
 
 ## Only save the end time
-fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/time{j}.rds")
+fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/time{j}_{seed}.rds")
 save(end_time, file = fname)

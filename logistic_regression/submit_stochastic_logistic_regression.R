@@ -13,7 +13,7 @@
 ## mh
 ## SAVE TIME HERE, COMPARE TO THE FINAL COMPLETION TIME FOR TOTAL RUN TIME
 ## date > /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/start_time.txt
-## qsub -q BIOSTAT -pe smp -2 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/err -o /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/out -t 1-25 /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_dnc.job
+## qsub -q BIOSTAT -pe smp -2 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/err -o /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/out -t 1-25 /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_dnc.job 1001
 
 ################################################################################
 ####### LOG INTO COMPUTE NODE BEFORE PROCEEDING ################################
@@ -247,9 +247,9 @@ save(tdiff, file = fname)
 
 set.seed(666)
 bary_res %<>% as.mcmc()
-BF <- bayesfactor_parameters(posterior = as.data.frame(bary_res[,5]), # Need posterior draws
-                             prior = data.frame(rnorm(nrow(bary_res), mu[5], sqrt(sigma[5,5]))), # also need prior draws
-                             null = 0)
+# BF <- bayesfactor_parameters(posterior = as.data.frame(bary_res[,5]), # Need posterior draws
+#                              prior = data.frame(rnorm(nrow(bary_res), mu[5], sqrt(sigma[5,5]))), # also need prior draws
+#                              null = 0)
 
 ################################################################################
 ## Look at the results from the two methods ####################################
