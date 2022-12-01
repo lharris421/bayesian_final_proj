@@ -1,7 +1,6 @@
 library(parallel)
 library(coda)
 library(bayestestR)
-library(adaptMCMC)
 library(mvtnorm)
 library(tidyverse)
 library(magrittr)
@@ -38,7 +37,10 @@ log_post_fun <- function(param, X, y, N, m, sigma, mu) {
 #### Code for MH ####
 #####################
 
-inner_draws <- function(X, y, N, NN = 1e4) {
+inner_draws <- function(i, x, y, N, NN = 1e4) {
+  
+  y <- y[fold_idx == i]
+  X <- x[fold_idx == i,]
   
   # priors
   mu <- rep(0, ncol(X))
@@ -78,26 +80,23 @@ inner_draws <- function(X, y, N, NN = 1e4) {
     
   }
   
-  return(list(beta_draws_mh, acc_count))
+  ## return(list(beta_draws_mh, acc_count))
+  beta_draws_mh
   
 }
 
-
-######################
-#### Run MH ##########
-######################
-res_full <- inner_draws(X, y, N)
 
 ########################
 #### Partition Data ####
 ########################
 
-out <- matrix(0, nrow = 1, ncol = 5,
+out <- matrix(0, nrow = 1, ncol = 6,
               dimnames = list(rep("", 1),
                               c("K", "m_j",
                                 "coef",
                                 "lower_ci",
-                                "upper_ci")))
+                                "upper_ci",
+                                "comp_time")))
 K <- 1
 repeat{
   # Create folds
@@ -106,21 +105,22 @@ repeat{
   if (m_j<500){
     break
   }
+  start.time <- Sys.time()
   cl <- makeCluster(min(detectCores(), K))
   clusterExport(
     cl,
     c("X", "y", "fold_idx", "N",
-    "inner_draws", "log_post_fun",
-    "optim_fun")
+    "inner_draws", "log_post_fun", "sd_prop")
     )
   clusterEvalQ(cl, {
     library(MASS)
+    library(dplyr)
     })
   
   results <-  parLapply(
     cl,
     1:K,
-    function(x) inner_draws(i = x, X = X, y = y, N = N, NN = 1e4)
+    function(x) inner_draws(i = x, x = X, y = y, N = N, NN = 1e4)
     )
   stopCluster(cl)
   
@@ -135,6 +135,9 @@ repeat{
                                                                    ncol = ncol(results[[i]]),
                                                                    byrow = T))
   full_data_draws <- do.call(rbind, results_recentered)
+  end.time <- Sys.time()
+  elapsed <- end.time-start.time
+  gc()
   
   #################
   #### Summary ####
@@ -142,24 +145,25 @@ repeat{
   summary <- describe_posterior(as.data.frame(full_data_draws))
   
   if(K==1){
-    out[K, ] <- c(K, m_j, summary[2,2], summary[2,4], summary[2,5])
+    out[K, ] <- c(K, m_j, summary[2,2], summary[2,4], summary[2,5], elapsed)
   } else{
-    out <- rbind(out, c(K, m_j, summary[2,2], summary[2,4], summary[2,5]))
+    out <- rbind(out, c(K, m_j, summary[2,2], summary[2,4], summary[2,5], elapsed))
   }
-  K <- K+1
+  K <- K + 1
 }
 
 save(out,
-     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_sim_plot_data.Rdata")
+     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/mh_sim_plot_data.Rdata")
 
 ##############
 #### Plot ####
 ##############
 
-load("/Volumes/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_sim_plot_data.Rdata")
+load("/Volumes/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/mh_sim_plot_data.Rdata")
 
 N <- 1e5
 
+# Plot of estimate and CI by K
 as_tibble(out) %>% 
   select(-m_j) %>% 
   left_join(as_tibble(out) %>% select(K, M_J=m_j) %>% 
@@ -182,5 +186,26 @@ as_tibble(out) %>%
   expand_limits(x = 205, y = 3.7)+
   ylim(c(3.7,4.05))+
   ylab("Estimate")
+
+# Plot of computation time by K
+as_tibble(out) %>% 
+  select(-m_j) %>% 
+  left_join(as_tibble(out) %>% select(K, M_J=m_j) %>% 
+              slice(c(1, seq(0, nrow(out), by = 5))) %>% 
+              mutate(m_j = paste0(M_J, " (", trimws(format(round(M_J/N *100, 2), nsmall =2)), "%)")),
+            by = "K") %>% 
+  mutate(m_j = ifelse(is.na(m_j), "", m_j)) %>% 
+  mutate(K = as.factor(K)) %>% 
+  ggplot(aes(K, comp_time, group =1))+
+  geom_line(col = "blue") +
+  geom_point(size=3, shape=21, fill="blue")+
+  scale_x_discrete(labels = c(1, seq(0, nrow(out), by = 5)),
+                   breaks = c(1, seq(0, nrow(out), by = 5)))+
+  expand_limits(x = -2, y = 2.5)+
+  expand_limits(x = 202, y = 2.5)+
+  ylab("Computation time (seconds)")
+
+
+
 
 
