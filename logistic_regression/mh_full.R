@@ -82,7 +82,7 @@ log_post_fun <- function(param) {
 #### Run MH ###########
 #######################
 
-set.seed(1234)
+set.seed(seed)
 for(i in 2:N) {
   
   beta_draws_mh[i,] <- beta_draws_mh[i - 1,]
