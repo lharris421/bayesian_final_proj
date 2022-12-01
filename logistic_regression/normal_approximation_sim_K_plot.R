@@ -90,12 +90,13 @@ inner_draws <- function(i, X, y, N, NN = 1e4) {
 #### Partition Data ####
 ########################
 
-out <- matrix(0, nrow = 1, ncol = 5,
+out <- matrix(0, nrow = 1, ncol = 6,
               dimnames = list(rep("", 1),
                               c("K", "m_j",
                                 "coef",
                                 "lower_ci",
-                                "upper_ci")))
+                                "upper_ci",
+                                "comp_time")))
 K <- 1
 repeat{
   # Create folds
@@ -104,6 +105,7 @@ repeat{
   if (m_j<500){
     break
   }
+  start.time <- Sys.time()
   cl <- makeCluster(min(detectCores(), K))
   clusterExport(
     cl,
@@ -133,16 +135,18 @@ repeat{
                                                                    ncol = ncol(results[[i]]),
                                                                    byrow = T))
   full_data_draws <- do.call(rbind, results_recentered)
-  
+  end.time <- Sys.time()
+  elapsed <- end.time-start.time
+  gc()
   #################
   #### Summary ####
   #################
   summary <- describe_posterior(as.data.frame(full_data_draws))
   
   if(K==1){
-    out[K, ] <- c(K, m_j, summary[2,2], summary[2,4], summary[2,5])
+    out[K, ] <- c(K, m_j, summary[2,2], summary[2,4], summary[2,5], elapsed)
   } else{
-    out <- rbind(out, c(K, m_j, summary[2,2], summary[2,4], summary[2,5]))
+    out <- rbind(out, c(K, m_j, summary[2,2], summary[2,4], summary[2,5], elapsed))
   }
   K <- K+1
 }
@@ -158,6 +162,7 @@ load("/Volumes/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_ap
 
 N <- 1e5
 
+# Plot of estimate and CI by K
 as_tibble(out) %>% 
   select(-m_j) %>% 
   left_join(as_tibble(out) %>% select(K, M_J=m_j) %>% 
@@ -180,5 +185,24 @@ as_tibble(out) %>%
   expand_limits(x = 205, y = 3.7)+
   ylim(c(3.7,4.05))+
   ylab("Estimate")
+
+# Plot of computation time by K
+as_tibble(out) %>% 
+  select(-m_j) %>% 
+  left_join(as_tibble(out) %>% select(K, M_J=m_j) %>% 
+              slice(c(1, seq(0, nrow(out), by = 5))) %>% 
+              mutate(m_j = paste0(M_J, " (", trimws(format(round(M_J/N *100, 2), nsmall =2)), "%)")),
+            by = "K") %>% 
+  mutate(m_j = ifelse(is.na(m_j), "", m_j)) %>% 
+  mutate(K = as.factor(K)) %>% 
+  ggplot(aes(K, comp_time, group =1))+
+  geom_line(col = "blue") +
+  geom_point(size=3, shape=21, fill="blue")+
+  scale_x_discrete(labels = c(1, seq(0, nrow(out), by = 5)),
+                   breaks = c(1, seq(0, nrow(out), by = 5)))+
+  expand_limits(x = -2, y = 2.5)+
+  expand_limits(x = 202, y = 2.5)+
+  ylab("Computation time (seconds)")
+
 
 
