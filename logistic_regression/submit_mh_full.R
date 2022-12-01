@@ -1,6 +1,13 @@
 ## qsub -q BIOSTAT -pe smp -2 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/err -o /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/out -t 1-25 /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_dnc.job 1002
 
 #######################
+#### Timing ###########
+#######################
+## Load in all the timing files and look at the distribution
+
+
+
+#######################
 #### Results ##########
 #######################
 load("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/res_full.rds")
