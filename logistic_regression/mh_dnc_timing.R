@@ -79,7 +79,7 @@ for (seed in seeds) {
   ## as_datetime(paste0(split_date[6], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
   
   ## Need to be careful with the units here
-  time_seeds[seed - 1000] <- with_tz(as_datetime(max(times)), "America/Chicago") - as_datetime(paste0(split_date[7], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
+  time_seeds[seed - 1000] <- with_tz(as_datetime(max(times)), "America/Chicago") - as_datetime(paste0(2022, "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
   
   start_time <- Sys.time()
   results <- list()
