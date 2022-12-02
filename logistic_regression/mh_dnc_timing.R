@@ -79,7 +79,7 @@ for (seed in seeds) {
   ## as_datetime(paste0(split_date[6], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
   
   ## Need to be careful with the units here
-  time_seeds[seed - 1000] <- difftime(with_tz(as_datetime(max(times)), "America/Chicago"), as_datetime(paste0(split_date[6], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago"), "mins")
+  time_seeds[seed - 1000] <- with_tz(as_datetime(max(times)), "America/Chicago") - as_datetime(paste0(split_date[7], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
   
   start_time <- Sys.time()
   results <- list()
@@ -130,7 +130,7 @@ for (seed in seeds) {
 time_simple <- time_seed
 time_wasp <- time_seed + wasp_diff
 
-save(time_simply, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/simple_{seed}.rds"))
+save(time_simple, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/simple_{seed}.rds"))
 save(time_wasp, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/wasp_{seed}.rds"))
 
 
