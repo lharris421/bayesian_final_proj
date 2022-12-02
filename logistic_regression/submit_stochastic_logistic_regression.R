@@ -39,7 +39,7 @@ library(readr)
 #### Check acceptance rate ####
 ###############################
 all_counts <- numeric(25)
-seed <- 1001
+seed <- 1002
 for (j in 1:25) {
   load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/acc_counts/mh_large/acc_counts{j}_{seed}.rds"))
   all_counts[j] <- acc_counts
