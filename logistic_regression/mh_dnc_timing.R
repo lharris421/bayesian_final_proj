@@ -122,7 +122,7 @@ for (seed in seeds) {
   wasp_diff[seed - 1000] <- (difftime(end_time, start_time, units = "mins") - tdiff)
   
   ## Save the draws
-  save(full_data_drawms, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/simple_{seed}.rds"))
+  save(full_data_draws, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/simple_{seed}.rds"))
   save(bary_res, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/results/wasp_{seed}.rds"))
 
 }
