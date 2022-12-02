@@ -4,7 +4,16 @@ qsub -q BIOSTAT -pe smp -6 -e /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_fi
 #### Timing ###########
 #######################
 ## Load in all the timing files and look at the distribution
+library(glue)
+times <- numeric(10)
+for (seed in 1001:1010) {
+  
+  load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/mh_full_time_{seed}.rds"))  
+  times[seed - 1000] <- tdiff * ifelse(units(tdiff) == "hours", 60, 1)
+  
+}
 
+summary(times)
 
 
 #######################
