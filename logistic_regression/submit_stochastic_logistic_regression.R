@@ -55,7 +55,7 @@ mean(all_counts) / 10000
 source("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_dnc_timing.R")
 
 summary(time_simple)
-time_wasp
+summary(time_wasp)
 
 
 #####################
