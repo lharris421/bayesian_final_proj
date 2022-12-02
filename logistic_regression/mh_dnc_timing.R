@@ -130,7 +130,7 @@ for (seed in seeds) {
 time_simple <- time_seeds
 time_wasp <- time_seeds + wasp_diff
 
-save(time_simple, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/simple_{seed}.rds"))
-save(time_wasp, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/wasp_{seed}.rds"))
+save(time_simple, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/simple_all.rds"))
+save(time_wasp, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/wasp_all.rds"))
 
 

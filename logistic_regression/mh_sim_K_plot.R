@@ -185,8 +185,9 @@ as_tibble(out) %>%
            fontface = "bold", size = 3.5)+ 
   expand_limits(x = -5, y = 3.7)+
   expand_limits(x = 205, y = 3.7)+
-  ylim(c(3.7,4.05))+
-  ylab("Estimate")
+  ylim(c(3.7,4.1))+
+  ylab("Estimate") + 
+  ggtitle("Estimate and 95% Cred Int by K - Metropolis Hastings")
 
 # Plot of computation time by K
 as_tibble(out) %>% 
@@ -204,7 +205,8 @@ as_tibble(out) %>%
                    breaks = c(1, seq(0, nrow(out), by = 5)))+
   expand_limits(x = -2, y = 2.5)+
   expand_limits(x = 202, y = 2.5)+
-  ylab("Computation time (seconds)")
+  ylab("Computation time (seconds)") +
+  ggtitle("Computation time by K - Metropolis Hastings")
 
 
 
