@@ -123,7 +123,7 @@ for (seed in seeds) {
   
   ## Save the draws
   save(full_data_draws, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/simple_{seed}.rds"))
-  save(bary_res, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/results/wasp_{seed}.rds"))
+  save(bary_res, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/results/mh_large/wasp_{seed}.rds"))
 
 }
 
