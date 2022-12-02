@@ -65,7 +65,7 @@ sampleBetas <- function (betaList) {
 seeds <- 1001:1010
 time_seed <- numeric(length(seeds))
 wasp_diff <- numeric(length(seeds))
-for (seed in 1:seeds) {
+for (seed in seeds) {
   
   times <- numeric(25)
   for (j in 1:25) {
@@ -76,9 +76,10 @@ for (seed in 1:seeds) {
   date_string <- read_lines(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/start_time_{seed}.txt"))
   split_date <- str_split(date_string, " ")[[1]]
   month_num <- which(month.abb == split_date[2])
-  as_datetime(paste0(split_date[6], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
+  ## as_datetime(paste0(split_date[6], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
   
-  time_seeds[seed - 1000] <- with_tz(as_datetime(max(times)), "America/Chicago") - as_datetime(paste0(split_date[6], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago")
+  ## Need to be careful with the units here
+  time_seeds[seed - 1000] <- difftime(with_tz(as_datetime(max(times)), "America/Chicago"), as_datetime(paste0(split_date[6], "-", month_num, "-", split_date[3], " ", split_date[4]), tz = "America/Chicago"), "mins")
   
   start_time <- Sys.time()
   results <- list()
@@ -96,8 +97,8 @@ for (seed in 1:seeds) {
   results <- lapply(results, remove_burnin, 1000)
   ## TIME END HERE
   end_time <- Sys.time()
-  tdiff <- end_time - start_time
-  time_seeds[seed - 1000] <- time_seeds[seed - 1000] + (tdiff / 60)
+  tdiff <- difftime(end_time, start_time, units = "mins")
+  time_seeds[seed - 1000] <- time_seeds[seed - 1000] + tdiff
   
   start_time <- Sys.time()
   K <- 25
@@ -111,14 +112,14 @@ for (seed in 1:seeds) {
   full_data_draws <- do.call(rbind, results_recentered)
   
   end_time <- Sys.time()
-  tdiff <- end_time - start_time
-  time_seeds[seed - 1000] <- time_seeds[seed - 1000] + (tdiff / 60)
+  tdiff <- difftime(end_time, start_time, units = "mins")
+  time_seeds[seed - 1000] <- time_seeds[seed - 1000] + tdiff
   
   start_time <- Sys.time()
   bary <- sampleBetas(results)
   bary_res <- bind_rows(bary)
   end_time <- Sys.time()
-  wasp_diff[seed - 1000] <- ((end_time - start_time) - tdiff) / 60
+  wasp_diff[seed - 1000] <- (difftime(end_time, start_time, units = "mins") - tdiff)
   
   ## Save the draws
   save(full_data_drawms, file = glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/results/mh_large/simple_{seed}.rds"))

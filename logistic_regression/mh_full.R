@@ -106,7 +106,7 @@ save(beta_draws_mh, file = fname)
 
 ## Save the time it took to run
 end_time <- Sys.time()
-tdiff <- end_time - start_time
+tdiff <- difftime(end_time, start_time, units = "mins")
 fname <- glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/times/mh_large/mh_full_time_{seed}.rds")
 save(tdiff, file = fname)
 

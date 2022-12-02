@@ -136,7 +136,8 @@ repeat{
                                                                    byrow = T))
   full_data_draws <- do.call(rbind, results_recentered)
   end.time <- Sys.time()
-  elapsed <- end.time-start.time
+  elapsed <- difftime(end.time, start.time, units = "secs")
+  print(elapsed)
   gc()
   
   #################
@@ -176,7 +177,7 @@ as_tibble(out) %>%
   geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), colour="black", width=.1)+
   geom_point(size=3, shape=21, fill="blue")+
   geom_hline(yintercept = 3.8, col = "red") +
-  geom_text(aes(y = upper_ci), angle = 90, nudge_y = +0.025,
+  geom_text(aes(y = upper_ci), angle = 90, nudge_y = +0.050,
             fontface = "bold", size = 3.5)+
   scale_x_discrete(labels = c(1, seq(0, nrow(out), by = 5)),
                    breaks = c(1, seq(0, nrow(out), by = 5)))+
