@@ -43,7 +43,10 @@ log_post_fun <- function(param, X, y, N, m, sigma, mu) {
   
   X <- cbind(rep(1, nrow(X)), X)
   
-  (N/m)*sum(y*X%*%param - log(1 + exp(X%*%param))) -
+  # (N/m)*sum(y*X%*%param - log(1 + exp(X%*%param))) -
+  #   drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
+  
+  sum(y*X%*%param - log(1 + exp(X%*%param))) -
     drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
   
 }
