@@ -57,30 +57,41 @@ log_post_fun <- function(param) {
 #### Run Normal Approx ####
 ###########################
 
-start.time <- Sys.time()
+run_norm <- function(){
+  Opt <- optim(par = rep(0,ncol(X)),
+               fn = log_post_fun, 
+               method = "BFGS",
+               control = list(fnscale= -1,
+                              maxit = 1e6),
+               hessian = T)
+  
+  params <- Opt$par
+  names(params) <- colnames(X)
+  SigNew <-  chol2inv(chol(-Opt$hessian))
+  
+  ## Draw from multivariate normal
+  beta_draws <- MASS::mvrnorm(N, mu = params, Sigma = SigNew)
+  return(beta_draws)
+  
+}
 
-Opt <- optim(par = rep(0,ncol(X)),
-             fn = log_post_fun, 
-             method = "BFGS",
-             control = list(fnscale= -1,
-                            maxit = 1e6),
-             hessian = T)
-
-params <- Opt$par
-names(params) <- colnames(X)
-SigNew <-  chol2inv(chol(-Opt$hessian))
-
-## Draw from multivariate normal
 set.seed(666) 
-beta_draws <- MASS::mvrnorm(N, mu = params, Sigma = SigNew)
+beta_draws <- run_norm()
 
-## Summary
+time <- microbenchmark::microbenchmark(run_norm(),
+                                       unit = "s",
+                                       times = 10)
+
+elapsed <- tibble(summary(time)) %>% 
+  dplyr::select(-expr, -neval) %>% 
+  mutate(across(everything(), ~./60)) #convert to minutes
+
+#################
+#### Summary ####
+#################
+
 summary <- describe_posterior(as.data.frame(beta_draws))
 hpd <- hdi(as.data.frame(beta_draws))
-
-end.time <- Sys.time()
-
-elapsed <- end.time-start.time
 
 results <- tibble(var = summary[,1],
                   coef = summary[,2],

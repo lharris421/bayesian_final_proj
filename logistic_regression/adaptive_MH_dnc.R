@@ -49,62 +49,81 @@ inner_draws <- function(j, NN = 1e4) {
   full_data_draws$samples
 }
 
-#########################
-#### Run in parallel ####
-#########################
-set.seed(666)
-start.time <- Sys.time()
-K <- 25
-cl <- makeCluster(min(detectCores(), 25))
-clusterExport(
-  cl,
-  c("inner_draws", "log_post_fun")
-)
-clusterEvalQ(cl, {
-  library(MASS)
-  library(glue)
-  library(adaptMCMC)
-})
+############################
+#### Parallel function #####
+############################
 
-results <-  parLapply(
-  cl,
-  1:K,
-  function(x) inner_draws(j = x, NN = 1e4)
-)
-stopCluster(cl)
-
-########################
-#### Remove burn-in ####
-########################
-
-remove_burnin <- function(x, burnin) {
-  x[-(1:burnin),]
+par_fun <- function(){
+  K <- 25
+  cl <- makeCluster(min(detectCores(), 25))
+  clusterExport(
+    cl,
+    c("inner_draws", "log_post_fun"),
+    envir = environment()
+  )
+  clusterEvalQ(cl, {
+    library(MASS)
+    library(adaptMCMC)
+    library(glue)
+  })
+  
+  results <-  parLapply(
+    cl,
+    1:K,
+    function(x) inner_draws(j = x, NN = 1e4)
+  )
+  
+  stopCluster(cl)
+  gc()
+  
+  ########################
+  #### Remove burn-in ####
+  ########################
+  
+  remove_burnin <- function(x, burnin) {
+    x[-(1:burnin),]
+  }
+  
+  results <- lapply(results, remove_burnin, 1000)
+  
+  ########################
+  #### Recenter Draws ####
+  ########################
+  
+  subset_mean <- t(sapply(1:K, function(i) colMeans(results[[i]]))) # rows indicate subset
+  ## This step was slightly off... it assumed perfect balance
+  ## global_mean <- colMeans(subset_mean)
+  global_mean <- colMeans(bind_rows(lapply(results, data.frame)))
+  recenter <- t(sapply(1:K, function(i) subset_mean[i, ] - global_mean)) # rows indicate subset
+  ## Should this be minus?
+  results_recentered <- lapply(1:K,function(i) results[[i]] - matrix(recenter[i, ],
+                                                                     nrow = nrow(results[[i]]),
+                                                                     ncol = ncol(results[[i]]),
+                                                                     byrow = T))
+  full_data_draws <- do.call(rbind, results_recentered)
+  
+  
+  return(full_data_draws)
 }
 
-results <- lapply(results, remove_burnin, 1000)
+set.seed(666)
+full_data_draws <- par_fun()
 
-########################
-#### Recenter Draws ####
-########################
+time <- microbenchmark::microbenchmark(par_fun(),
+                                       unit = "s",
+                                       times = 10)
 
-subset_mean <- t(sapply(1:K, function(i) colMeans(results[[i]]))) # rows indicate subset
-## This step was slightly off... it assumed perfect balance
-## global_mean <- colMeans(subset_mean)
-global_mean <- colMeans(bind_rows(lapply(results, data.frame)))
-recenter <- t(sapply(1:K, function(i) subset_mean[i, ] - global_mean)) # rows indicate subset
-## Should this be minus?
-results_recentered <- lapply(1:K,function(i) results[[i]] - matrix(recenter[i, ],
-                                                                   nrow = nrow(results[[i]]),
-                                                                   ncol = ncol(results[[i]]),
-                                                                   byrow = T))
-full_data_draws <- do.call(rbind, results_recentered)
+elapsed <- tibble(summary(time)) %>% 
+  dplyr::select(-expr, -neval) %>% 
+  mutate(across(everything(), ~./60)) #convert to minutes
 
-## Summary
+
+#################
+#### Summary ####
+#################
+
 summary <- describe_posterior(as.data.frame(full_data_draws))
 hpd <- hdi(as.data.frame(full_data_draws))
-
-end.time <- Sys.time()
-elapsed <- end.time-start.time
 
 results <- tibble(var = summary[,1],
                   coef = summary[,2],

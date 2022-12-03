@@ -10,7 +10,6 @@ library(matrixStats)
 library(expm)
 library(MASS)
 
-
 ########################
 #### WASP functions ####
 ########################
@@ -46,7 +45,8 @@ computeBarycenter <- function (meanList, covList) {
 }
 
 sampleBetas <- function (betaList) {
-  
+  library(matrixStats)
+  library(expm)
   npart <- length(betaList)
   meanBetas <- list()
   covBetas <- list()
@@ -72,7 +72,6 @@ sampleBetas <- function (betaList) {
   )
 }
 
-
 #######################
 #### Log Posterior ####
 #######################
@@ -80,24 +79,6 @@ sampleBetas <- function (betaList) {
 log_post_fun <- function(param, X, y, ratio, sigma, mu) {
   (ratio)*sum(y*X%*%param - log(1 + exp(X%*%param))) -
     drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu))
-}
-
-########################
-#### Optim function ####
-########################
-
-optim_fun <- function(init, X, y, ratio, sigma, mu) {
-  optim(par = init,
-        fn = log_post_fun,
-        method = "BFGS",
-        control = list(fnscale= -1,
-                       maxit = 1e6),
-        hessian = T,
-        sigma = sigma, 
-        mu = mu,
-        X = X,
-        y = y,
-        ratio = ratio)
 }
 
 #######################
@@ -118,77 +99,74 @@ inner_draws <- function(j, NN = 1e4) {
   x0 <- cbind(rep(1, nrow(x0)), x0)
   colnames(x0)[1] <- "intercept"
   
-  Opt <- optim_fun(init = rep(0, ncol(x0)),
-                   X = x0, 
-                   y = y0,
-                   ratio = nrep0,
-                   sigma = sigma,
-                   mu = mu)
+  temp <- glm(y0 ~x0-1, family = "binomial")
   
-  params <- Opt$par
-  names(params) <- colnames(x0)
-  SigNew <- chol2inv(chol(-Opt$hessian))
+  full_data_draws <-  MCMC(p = log_post_fun,
+                           n = NN,
+                           init = coef(temp),
+                           acc.rate = 0.234,
+                           X = x0, 
+                           y = y0, 
+                           ratio = nrep0,
+                           mu = mu,
+                           sigma = sigma)
   
-  ## Draw from multivariate normal
-  MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
+  full_data_draws$samples
 }
 
-############################
-#### Parallel function #####
-############################
+#########################
+#### Run in parallel ####
+#########################
 
-par_fun <- function(){
-  K <- 25
-  cl <- makeCluster(min(detectCores(), 25))
-  clusterExport(
-    cl,
-    c("inner_draws", "log_post_fun",
-      "optim_fun"),
-    envir = environment()
-  )
-  clusterEvalQ(cl, {
-    library(MASS)
-    library(glue)
-  })
-  
-  results <-  parLapply(
-    cl,
-    1:K,
-    function(x) inner_draws(j = x, NN = 1e4)
-  )
-  
-  stopCluster(cl)
-  gc()
-  
-  ##########################################
-  #### Combine using WASP approximation ####
-  ##########################################
-  
-  bary <- sampleBetas(results)
-  bary_res <- bind_rows(bary)
-  full_data_draws <- bary_res$wasp
-  colnames(full_data_draws) <- colnames(results[[1]])
-  
-  return(full_data_draws)
+args <- commandArgs(trailingOnly = TRUE)
+seed_in <- args[1]
+
+set.seed(seed_in) 
+start.time <- Sys.time()
+K <- 25
+cl <- makeCluster(min(detectCores(), 25))
+clusterExport(
+  cl,
+  c("inner_draws", "log_post_fun")
+)
+clusterEvalQ(cl, {
+  library(MASS)
+  library(glue)
+  library(adaptMCMC)
+})
+
+results <-  parLapply(
+  cl,
+  1:K,
+  function(x) inner_draws(j = x, NN = 1e4)
+)
+stopCluster(cl)
+
+########################
+#### Remove burn-in ####
+########################
+
+remove_burnin <- function(x, burnin) {
+  x[-(1:burnin),]
 }
 
-set.seed(666)
-full_data_draws <- par_fun()
+results <- lapply(results, remove_burnin, 1000)
 
-time <- microbenchmark::microbenchmark(par_fun(),
-                                       unit = "s",
-                                       times = 10)
+##########################################
+#### Combine using WASP approximation ####
+##########################################
 
-elapsed <- tibble(summary(time)) %>% 
-  dplyr::select(-expr, -neval) %>% 
-  mutate(across(everything(), ~./60)) #convert to minutes
+bary <- sampleBetas(results)
+bary_res <- bind_rows(bary)
+full_data_draws <- bary_res$wasp
+colnames(full_data_draws) <- colnames(results[[1]])
 
-#################
-#### Summary ####
-#################
-
+## Summary
 summary <- describe_posterior(as.data.frame(full_data_draws))
 hpd <- hdi(as.data.frame(full_data_draws))
+
+end.time <- Sys.time()
+elapsed <- difftime(end.time, start.time, units = "mins")
 
 results <- tibble(var = summary[,1],
                   coef = summary[,2],
@@ -230,20 +208,20 @@ colnames(X)[1] <- "intercept"
 set.seed(666)
 BF <- bayesfactor_parameters(posterior = as.data.frame(full_data_draws[,5]), # Need posterior draws
                              prior = data.frame(rnorm(nrow(full_data_draws), mu[5], sqrt(sigma[5,5]))), # also need prior draws
-                             null = 0)
-
+                             null = 0) # did not converge
 ##############
 #### Save ####
 ##############
 
 out <- list(result_table = results,
-            BF = as.numeric(BF),
+            BF = NA, #as.numeric(BF),
             diagnostics = list(heidel = heidel.diag(full_data_draws),
                                raftery = raftery.diag(full_data_draws)),
             comp_time = elapsed)
 
 save(out, full_data_draws,
-     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/normal_approx_dnc_WASP.Rdata")
+     file = paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_dnc_WASP_", 
+                   seed_in, ".Rdata"))
 
 temp <- out$result_table
 temp %>% mutate(across(coef:central_upper, ~format(round(exp(.), 3), nsmall = 3))) %>% 

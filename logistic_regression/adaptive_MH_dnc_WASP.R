@@ -10,6 +10,7 @@ library(matrixStats)
 library(expm)
 library(MASS)
 
+
 ########################
 #### WASP functions ####
 ########################
@@ -45,7 +46,8 @@ computeBarycenter <- function (meanList, covList) {
 }
 
 sampleBetas <- function (betaList) {
-  
+  library(matrixStats)
+  library(expm)
   npart <- length(betaList)
   meanBetas <- list()
   covBetas <- list()
@@ -113,55 +115,73 @@ inner_draws <- function(j, NN = 1e4) {
   full_data_draws$samples
 }
 
-#########################
-#### Run in parallel ####
-#########################
-set.seed(666) 
-start.time <- Sys.time()
-K <- 25
-cl <- makeCluster(min(detectCores(), 25))
-clusterExport(
-  cl,
-  c("inner_draws", "log_post_fun")
-)
-clusterEvalQ(cl, {
-  library(MASS)
-  library(glue)
-  library(adaptMCMC)
-})
 
-results <-  parLapply(
-  cl,
-  1:K,
-  function(x) inner_draws(j = x, NN = 1e4)
-)
-stopCluster(cl)
+############################
+#### Parallel function #####
+############################
 
-########################
-#### Remove burn-in ####
-########################
-
-remove_burnin <- function(x, burnin) {
-  x[-(1:burnin),]
+par_fun <- function(){
+  K <- 25
+  cl <- makeCluster(min(detectCores(), 25))
+  clusterExport(
+    cl,
+    c("inner_draws", "log_post_fun"),
+    envir = environment()
+  )
+  clusterEvalQ(cl, {
+    library(MASS)
+    library(adaptMCMC)
+    library(glue)
+  })
+  
+  results <-  parLapply(
+    cl,
+    1:K,
+    function(x) inner_draws(j = x, NN = 1e4)
+  )
+  
+  stopCluster(cl)
+  gc()
+  
+  ########################
+  #### Remove burn-in ####
+  ########################
+  
+  remove_burnin <- function(x, burnin) {
+    x[-(1:burnin),]
+  }
+  
+  results <- lapply(results, remove_burnin, 1000)
+  
+  ##########################################
+  #### Combine using WASP approximation ####
+  ##########################################
+  
+  bary <- sampleBetas(results)
+  bary_res <- bind_rows(bary)
+  full_data_draws <- bary_res$wasp
+  colnames(full_data_draws) <- colnames(results[[1]])
+  
+  return(full_data_draws)
 }
 
-results <- lapply(results, remove_burnin, 1000)
+set.seed(666)
+full_data_draws <- par_fun()
 
-##########################################
-#### Combine using WASP approximation ####
-##########################################
+time <- microbenchmark::microbenchmark(par_fun(),
+                                       unit = "s",
+                                       times = 10)
 
-bary <- sampleBetas(results)
-bary_res <- bind_rows(bary)
-full_data_draws <- bary_res$wasp
-colnames(full_data_draws) <- colnames(results[[1]])
+elapsed <- tibble(summary(time)) %>% 
+  dplyr::select(-expr, -neval) %>% 
+  mutate(across(everything(), ~./60)) #convert to minutes
 
-## Summary
+#################
+#### Summary ####
+#################
+
 summary <- describe_posterior(as.data.frame(full_data_draws))
 hpd <- hdi(as.data.frame(full_data_draws))
-
-end.time <- Sys.time()
-elapsed <- end.time-start.time
 
 results <- tibble(var = summary[,1],
                   coef = summary[,2],
@@ -195,7 +215,7 @@ X <- as.matrix(full_data)[, -1]
 mu <- c(-1.61, rep(0, ncol(X)))
 sd_temp <- sqrt(diag(var(X)))
 scale <- c(1, sd_temp[2], 1, 1, sd_temp[5])  # need to make sure we only scale continuous vars
-sigma <- diag(c(40^2, 3^2 * scale)) 
+sigma <- diag(c(40^2, 3^2 * scale))
 
 X <- cbind(rep(1, nrow(X)), X)
 colnames(X)[1] <- "intercept"
@@ -203,16 +223,18 @@ colnames(X)[1] <- "intercept"
 set.seed(666)
 BF <- bayesfactor_parameters(posterior = as.data.frame(full_data_draws[,5]), # Need posterior draws
                              prior = data.frame(rnorm(nrow(full_data_draws), mu[5], sqrt(sigma[5,5]))), # also need prior draws
-                             null = 0) # did not converge
+                             null = 0)
+
 ##############
 #### Save ####
 ##############
 
 out <- list(result_table = results,
-            BF = NA, #as.numeric(BF),
+            BF = NULL,
             diagnostics = list(heidel = heidel.diag(full_data_draws),
                                raftery = raftery.diag(full_data_draws)),
             comp_time = elapsed)
+
 save(out, full_data_draws,
      file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_dnc_WASP.Rdata")
 
@@ -220,5 +242,6 @@ temp <- out$result_table
 temp %>% mutate(across(coef:central_upper, ~format(round(exp(.), 3), nsmall = 3))) %>% 
   dplyr::select(var:central_upper) %>% 
   mutate(nice = paste0(coef, " (", central_lower, ", ", central_upper, ")"))
+
 
 

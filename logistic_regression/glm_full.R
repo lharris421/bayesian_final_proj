@@ -19,13 +19,15 @@ full_data <- mod_dat %>%
 y <- full_data$proc * 1
 X <- as.matrix(full_data)[, -1]
 
-start.time <- Sys.time()
-
 glm_fit <- glm(y ~ X, family = "binomial")
 
-end.time <- Sys.time()
+time <- microbenchmark::microbenchmark(glm(y ~ X, family = "binomial"),
+                                       unit = "s",
+                                       times = 10)
 
-elapsed <- end.time-start.time
+elapsed <- tibble(summary(time)) %>% 
+  dplyr::select(-expr, -neval) %>% 
+  mutate(across(everything(), ~./60)) #convert to minutes
 
 results <- tibble(var = c("intercept", colnames(X)),
                           coef = coef(glm_fit)) %>%

@@ -27,7 +27,7 @@ y <- rbinom(N, 1, pr)
 
 log_post_fun <- function(param, X, y, N, m
                          #, sigma, mu
-                         ) {
+) {
   (N/m)*sum(y*X%*%param - log(1 + exp(X%*%param)))
   # -
   #   drop(0.5*t((param - mu)) %*% solve(sigma) %*% (param - mu)) # flat prior
@@ -39,7 +39,7 @@ log_post_fun <- function(param, X, y, N, m
 
 optim_fun <- function(init, X, y, N, m
                       #, sigma, mu
-                      ) {
+) {
   optim(par = init,
         fn = log_post_fun,
         method = "BFGS",
@@ -58,7 +58,7 @@ optim_fun <- function(init, X, y, N, m
 #### Main function ####
 #######################
 
-inner_draws <- function(fold_idx, i, X, y, N, NN = 1e4) {
+inner_draws <- function(i, X, y, N, NN = 1e4) {
   fold_data_y <- y[fold_idx == i]
   fold_data_X <- X[fold_idx == i,]
   
@@ -74,7 +74,7 @@ inner_draws <- function(fold_idx, i, X, y, N, NN = 1e4) {
                    # ,
                    # sigma = sigma,
                    # mu = mu
-                   )
+  )
   
   params <- Opt$par
   SigNew <- chol2inv(chol(-Opt$hessian))
@@ -82,26 +82,37 @@ inner_draws <- function(fold_idx, i, X, y, N, NN = 1e4) {
   ## Draw from multivariate normal
   ## beta_draws <- MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
   ## return(beta_draws)
+  set.seed(666) # Added seed
   MASS::mvrnorm(NN, mu =  params, Sigma = SigNew)
 }
 
+########################
+#### Partition Data ####
+########################
 
-#######################
-#### Rep function #####
-#######################
-
-rep_fun <- function(X, Y, fold_idx, N){
-  
+out <- matrix(0, nrow = 1, ncol = 6,
+              dimnames = list(rep("", 1),
+                              c("K", "m_j",
+                                "coef",
+                                "lower_ci",
+                                "upper_ci",
+                                "comp_time")))
+K <- 1
+repeat{
+  # Create folds
+  fold_idx <- (sample(1:N, replace = FALSE)) %% K + 1
+  m_j <- max(table(fold_idx))
+  if (m_j<500){
+    break
+  }
+  start.time <- Sys.time()
   cl <- makeCluster(min(detectCores(), K))
-  
   clusterExport(
     cl,
     c("X", "y", "fold_idx", "N",
       "inner_draws", "log_post_fun",
-      "optim_fun"),
-    envir = environment()
+      "optim_fun")
   )
-  
   clusterEvalQ(cl, {
     library(MASS)
   })
@@ -109,16 +120,13 @@ rep_fun <- function(X, Y, fold_idx, N){
   results <-  parLapply(
     cl,
     1:K,
-    function(x) inner_draws(fold_idx = fold_idx,
-                            i = x, X = X, y = y, N = N, NN = 1e4)
+    function(x) inner_draws(i = x, X = X, y = y, N = N, NN = 1e4)
   )
-  
   stopCluster(cl)
   
   ########################
   #### Recenter Draws ####
   ########################
-  
   subset_mean <- t(sapply(1:K, function(i) colMeans(results[[i]]))) # rows indicate subset
   global_mean <- colMeans(bind_rows(lapply(results, data.frame)))
   recenter <- t(sapply(1:K, function(i) subset_mean[i, ] - global_mean)) # rows indicate subset
@@ -127,60 +135,20 @@ rep_fun <- function(X, Y, fold_idx, N){
                                                                      ncol = ncol(results[[i]]),
                                                                      byrow = T))
   full_data_draws <- do.call(rbind, results_recentered)
-  
-  return(full_data_draws)
-}
-
-
-########################
-#### Partition Data ####
-########################
-
-out <-tibble()
-K <- 1
-repeat{
-  # Create folds
-  fold_idx <- (sample(1:N, replace = FALSE)) %% K + 1
-  m_j <- max(table(fold_idx))
-  
-  if (m_j<500){
-    break
-  }
-  
-  full_data_draws <- rep_fun(X = X, Y = Y, 
-                             fold_idx = fold_idx, N = N)
+  end.time <- Sys.time()
+  elapsed <- end.time-start.time
   gc()
-  
-  time <- microbenchmark::microbenchmark(rep_fun(X = X, Y = Y, 
-                                                 fold_idx = fold_idx, N = N),
-                                         unit = "s",
-                                         times = 10)
-  gc()
-  
   #################
   #### Summary ####
   #################
-  
   summary <- describe_posterior(as.data.frame(full_data_draws))
   
-  tmp <- tibble(K = K, 
-                m_j = m_j, 
-                coef = summary[2,2],
-                lower_ci = summary[2,4],
-                upper_ci = summary[2,5])
-  
-  tmp <- bind_cols(tmp, 
-                   tibble(summary(time)) %>% 
-                     dplyr::select(-expr))
-  
-  out <- bind_rows(out, tmp)
-    
-  K <- K+1
-  
-  if(K %% 5 == 0){
-    print(K)
+  if(K==1){
+    out[K, ] <- c(K, m_j, summary[2,2], summary[2,4], summary[2,5], elapsed)
+  } else{
+    out <- rbind(out, c(K, m_j, summary[2,2], summary[2,4], summary[2,5], elapsed))
   }
-  
+  K <- K+1
 }
 
 save(out,
@@ -213,25 +181,27 @@ as_tibble(out) %>%
                    breaks = c(1, seq(0, nrow(out), by = 5)))+
   annotate("text", x = 197, y=3.805, label = "Truth", col = "red",
            fontface = "bold", size = 3.5)+ 
-  expand_limits(x = -2, y = 3.7)+
-  expand_limits(x = 202, y = 3.7)+
+  expand_limits(x = -5, y = 3.7)+
+  expand_limits(x = 205, y = 3.7)+
   ylim(c(3.7,4.05))+
-  ylab("Estimate")+
-  ggtitle("Estimate and 95% Cred Int by K - Normal Approx")
+  ylab("Estimate")
 
 # Plot of computation time by K
 as_tibble(out) %>% 
   select(-m_j) %>% 
+  left_join(as_tibble(out) %>% select(K, M_J=m_j) %>% 
+              slice(c(1, seq(0, nrow(out), by = 5))) %>% 
+              mutate(m_j = paste0(M_J, " (", trimws(format(round(M_J/N *100, 2), nsmall =2)), "%)")),
+            by = "K") %>% 
+  mutate(m_j = ifelse(is.na(m_j), "", m_j)) %>% 
   mutate(K = as.factor(K)) %>% 
-  ggplot(aes(K, mean))+
+  ggplot(aes(K, comp_time, group =1))+
+  geom_line(col = "blue") +
   geom_point(size=3, shape=21, fill="blue")+
-  geom_errorbar(aes(ymin=min, ymax=max), colour="black", width=.1)+
   scale_x_discrete(labels = c(1, seq(0, nrow(out), by = 5)),
                    breaks = c(1, seq(0, nrow(out), by = 5)))+
   expand_limits(x = -2, y = 2.5)+
   expand_limits(x = 202, y = 2.5)+
-  ylab("Computation time (seconds)")+
-  ggtitle("Computation time by K - Normal Approx")
-
+  ylab("Computation time (seconds)")
 
 

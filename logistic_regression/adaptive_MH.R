@@ -6,7 +6,7 @@ library(mvtnorm)
 library(tidyverse)
 library(magrittr)
 
-  
+
 ###################
 #### Load Data ####
 ###################
@@ -63,7 +63,10 @@ start.time <- Sys.time()
 #load glm full data
 load("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/glm.Rdata")
 
-set.seed(666)
+args <- commandArgs(trailingOnly = TRUE)
+seed_in <- args[1] 
+set.seed(seed_in)
+
 beta_draws <-  MCMC(p = log_post_fun,
                     n = NN,
                     init = out$result_table$coef,
@@ -128,10 +131,9 @@ out <- list(result_table = results,
             comp_time = elapsed)
 
 save(out, beta_draws,
-     file = "/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_full.Rdata")
+     file = paste0("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/data/adaptive_MH_full_", seed_in,".Rdata"))
 
 temp <- out$result_table
 temp %>% mutate(across(coef:central_upper, ~format(round(exp(.), 3), nsmall = 3))) %>% 
   dplyr::select(var:central_upper) %>% 
   mutate(nice = paste0(coef, " (", central_lower, ", ", central_upper, ")"))
-
