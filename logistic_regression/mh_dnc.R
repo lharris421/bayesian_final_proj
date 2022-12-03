@@ -33,7 +33,7 @@ load(glue("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_r
 
 
 ## sd_prop <- .012 ## Controls step size of MH algorithm
-sd_prop <- .075 ## for the non-power likelihood
+sd_prop <- .25 ## for the non-power likelihood
 N <- round(nrep0 * nrow(x0)) ## Full dataset size, needed for log posterior
 
 ################################
