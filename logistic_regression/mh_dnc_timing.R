@@ -62,7 +62,8 @@ sampleBetas <- function (betaList) {
   )
 }
 
-seeds <- 1001:1010
+## seeds <- 1001:1010
+seeds <- 10101
 time_seeds <- numeric(length(seeds))
 wasp_diff <- numeric(length(seeds))
 for (seed in seeds) {
