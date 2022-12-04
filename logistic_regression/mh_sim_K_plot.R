@@ -4,6 +4,7 @@ library(bayestestR)
 library(mvtnorm)
 library(tidyverse)
 library(magrittr)
+library(microbenchmark)
 
 #######################
 #### Simulate Data ####
@@ -37,7 +38,7 @@ log_post_fun <- function(param, X, y, N, m, sigma, mu) {
 #### Code for MH ####
 #####################
 
-inner_draws <- function(i, x, y, N, NN = 1e4) {
+inner_draws <- function(fold_idx, i, x, y, N, NN = 1e4) {
   
   y <- y[fold_idx == i]
   X <- x[fold_idx == i,]
@@ -96,8 +97,7 @@ rep_fun <- function(X, y, fold_idx, N){
   clusterExport(
     cl,
     c("X", "y", "fold_idx", "N",
-      "inner_draws", "log_post_fun",
-      "optim_fun", "sd_prop"),
+      "inner_draws", "log_post_fun", "sd_prop"),
     envir = environment()
   )
   
@@ -136,7 +136,7 @@ rep_fun <- function(X, y, fold_idx, N){
 #### Partition Data ####
 ########################
 
-out <-tibble()
+out <- tibble()
 K <- 1
 
 repeat{
@@ -159,9 +159,6 @@ repeat{
                                          times = 10)  
   
   gc()
-
-  elapsed <- difftime(end.time, start.time, units = "secs")
-  print(elapsed)
   
   #################
   #### Summary ####
