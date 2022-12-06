@@ -32,6 +32,7 @@ We have structured the repository as follows:
         - `likelihoods.Rmd`: Rmarkdown to generate `likelihoods.md`
         - `glm_full.R`: Run the frequentist GLM model
         - `time_compare_plot.R`: script to generate plot of time comparisons for the different approaches
+        - `bin_power_like_plot.R`: script to generate plot to show differences between likelihoof and power likelihood
     6) `archive`
         - contains old scripts of various different iterations of initial attempts
 
