@@ -24,7 +24,7 @@ We have structured the repository as follows:
         - `mh_dnc.job`
         - `mh_full.job`
         - `mh_sim_K_plot.R` : script for simulation plots assessing bias and time over different values of k
-    4) `partitions`
+    4) `partitions_scripts`
         - `partition.R`: script to partition the dataset into k partitions
         - `partition.job`: job scirpt to run `partition.R` on HPC
     5) `misc`
