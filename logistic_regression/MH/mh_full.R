@@ -1,4 +1,4 @@
-## source("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/mh_full.R")
+## source("/Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/MH/mh_full.R")
 
 ## Start the timer!!!
 start_time <- Sys.time()

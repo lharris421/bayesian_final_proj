@@ -1,2 +1,2 @@
 module load R
-Rscript /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partition.R
+Rscript /Shared/Statepi_Marketscan/aa_lh_bayes/bayesian_final_proj/logistic_regression/partition_scripts/partition.R
