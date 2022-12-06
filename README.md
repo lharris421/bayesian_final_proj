@@ -4,7 +4,7 @@ This repository contains code for the final project titled "Evaluating the assoc
 
 We have structured the repository as follows:
 
-- The folder 'logistic_regression' contains all the relevant code for the current project
+- The folder `logistic_regression` contains all the relevant code for the current project
 - Within the logistic_regression folder we have the following folders and scripts:
     - normal_approx
 
