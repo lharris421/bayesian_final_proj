@@ -16,13 +16,13 @@ We have structured the repository as follows:
         - `adaptive_MH_dnc.R`: script for D&C w recentering approach
         - `adaptive_MH_dnc_WASP.R`: script for D&C w WASP approach
     3) `MH`
-        - `mh_full.R`: script for non-D&C approach
-        - `mh_dnc.R`: script for D&C w recentering approach
+        - `mh_full.R`: script for non-D&C approach, called by `mh_full.job`
+        - `mh_dnc.R`: script for D&C w recentering approach, called by `mh_dnc.job`
         - `mh_dnc_timing.R`: script for obtaining run times for D&C approaches
-        - `submit_mh_full.R`:
-        - `submit_stochastic_logistic_regression.R`
-        - `mh_dnc.job`
-        - `mh_full.job`
+        - `submit_mh_full.R`: script with qsub command to run `mh_full.job` and code to subsequently evaluate results
+        - `submit_stochastic_logistic_regression.R` script with `qsub` command to submit `mh_dnc.job` and subsequently evaluate results
+        - `mh_dnc.job` intermediate between `submit_stochastic_logistic_regression.R` and `mh_dnc.R`
+        - `mh_full.job` intermediate between `submit_mh_full.R` and `mh_full.R`
         - `mh_sim_K_plot.R` : script for simulation plots assessing bias and time over different values of k
     4) `partitions_scripts`
         - `partition.R`: script to partition the dataset into k partitions
